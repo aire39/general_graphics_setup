@@ -1,10 +1,14 @@
-#include <iostream>
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <string>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl3.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 #include <SDL3/SDL.h>
+#include <spdlog/spdlog.h>
 
 #include "GraphicsWindow.h"
 
@@ -12,7 +16,18 @@ int32_t WindowResize(void * data, SDL_Event * event);
 
 int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
 {
-  std::cout << "hello graphics world!" << std::endl;
+  #ifdef _WIN32
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (handle != INVALID_HANDLE_VALUE) {
+      DWORD mode = 0;
+      if (GetConsoleMode(handle, &mode)) {
+        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        SetConsoleMode(handle, mode);
+      }
+    }
+  #endif
+
+  spdlog::info("hello graphics world!");
 
   // sdl and window initialization
 
@@ -28,7 +43,7 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
 
   if (!graphics_window.IsWindowInitialized())
   {
-    std::cerr << "Unable to initialize a window!!!" << std::endl;
+    spdlog::error("Unable to initialize a window!!!");
     return 0;
   }
 
@@ -94,7 +109,7 @@ int32_t WindowResize(void * data, SDL_Event * event)
     SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
     if (window == static_cast<SDL_Window*>(data))
     {
-      std::cout << "window resizing..." << std::endl;
+      spdlog::info("window resizing...");
     }
   }
 

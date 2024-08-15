@@ -4,3 +4,6 @@
 [submodule "libs/gui/imgui"]
 	path = libs/gui/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "libs/spdlog"]
+	path = libs/spdlog
+	url = https://github.com/gabime/spdlog.git

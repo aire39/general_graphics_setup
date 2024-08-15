@@ -19,6 +19,10 @@ file(GLOB IMGUI_SRC ${PROJECT_SOURCE_DIR}/libs/gui/imgui/*.cpp)
 file(GLOB IMGUI_SRC_OGLSUPPORT ${PROJECT_SOURCE_DIR}/libs/gui/imgui/backends/imgui_impl_opengl3*)
 file(GLOB IMGUI_SRC_SDLSUPPORT ${PROJECT_SOURCE_DIR}/libs/gui/imgui/backends/imgui_impl_sdl3*)
 
+## Add SPD Log
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog)
+
 ## Add OpenGL packages
 find_package(OpenGL REQUIRED)
 
@@ -36,6 +40,7 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
                       SDL3-static
+                      spdlog::spdlog
                       ${OPENGL_LIBRARIES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC

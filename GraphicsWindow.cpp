@@ -3,7 +3,8 @@
 #define GL_GLEXT_PROTOTYPES
 #include <SDL3/SDL_opengl.h>
 
-#include <iostream>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/bundled/color.h>
 
 [[maybe_unused]] GraphicsWindow::GraphicsWindow(const std::string& window_title, int32_t window_width, int32_t window_height)
   : GraphicsWindow(window_title, window_width, window_height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE)
@@ -25,7 +26,7 @@ GraphicsWindow::GraphicsWindow(const std::string& window_title, int32_t window_w
 {
   if (((window_flags & SDL_WINDOW_OPENGL) != 0) && (glContext == nullptr))
   {
-    std::cout << "Create OpenGLContext!" << std::endl;
+    spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "Create OpenGLContext!"));
     glContext = std::make_unique<OpenGLContext>(*this);
     SetOpenGLContext(glContext);
   }
@@ -38,7 +39,7 @@ GraphicsWindow::~GraphicsWindow()
     glContext.reset();
   }
 
-  std::cout << "Destroy GraphicsWindow!" << std::endl;
+  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_magenta), "Destroy GraphicsWindow!"));
 }
 
 void GraphicsWindow::SetOpenGLContext(std::unique_ptr<OpenGLContext> && gl_context) noexcept

@@ -2,7 +2,8 @@
 
 #include "GraphicsWindow.h"
 
-#include <iostream>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/bundled/color.h>
 
 OpenGLContext::OpenGLContext(GraphicsWindow & graphics_window)
 {
@@ -21,7 +22,7 @@ OpenGLContext::OpenGLContext(GraphicsWindow & graphics_window)
 
 OpenGLContext::~OpenGLContext()
 {
-  std::cout << "Destroy OpenGLContext!" << std::endl;
+  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_magenta), "Destroy OpenGLContext!"));
   SDL_GL_DestroyContext(context);
 }
 
