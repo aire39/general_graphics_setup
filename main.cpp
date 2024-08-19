@@ -4,6 +4,8 @@
 
 #include <string>
 
+#include <glad/glad.h>
+
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_sdl3.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
@@ -11,6 +13,7 @@
 #include <spdlog/spdlog.h>
 
 #include "GraphicsWindow.h"
+#include "graphics/OGLShader.h"
 
 int32_t WindowResize(void * data, SDL_Event * event);
 
@@ -46,6 +49,14 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
     spdlog::error("Unable to initialize a window!!!");
     return 0;
   }
+
+  gladLoadGLLoader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress));
+
+  // this is a quick test for calling opengl functions
+  OGLShader vshader("", ShaderType::VERTEX);
+  vshader.Use();
+  OGLShader fshader("", ShaderType::FRAGMENT);
+  fshader.Use();
 
   // initialize imGUI
   ImGui::CreateContext();
