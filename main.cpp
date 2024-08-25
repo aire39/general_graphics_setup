@@ -53,10 +53,30 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
   gladLoadGLLoader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress));
 
   // this is a quick test for calling opengl functions
-  OGLShader vshader("", ShaderType::VERTEX);
-  vshader.Use();
-  OGLShader fshader("", ShaderType::FRAGMENT);
-  fshader.Use();
+  const std::string vertex_shader_code = "#version 330 core\n" \
+                                         "layout (location = 0) in vec3 aPos; // the position variable has attribute position 0\n" \
+                                         "  \n" \
+                                         "out vec4 vertexColor; // specify a color output to the fragment shader\n" \
+                                         "\n" \
+                                         "void main()\n" \
+                                         "{\n" \
+                                         "    gl_Position = vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
+                                         "    vertexColor = vec4(0.5, 0.0, 0.0, 1.0); // set the output variable to a dark-red color\n" \
+                                         "}";
+
+  OGLShader vshader(vertex_shader_code, OGLShader::ShaderType::VERTEX);
+
+  const std::string fragment_shader_code = "#version 330 core\n" \
+                                           "out vec4 FragColor;\n" \
+                                           "  \n" \
+                                           "in vec4 vertexColor; // the input variable from the vertex shader (same name and same type)  \n" \
+                                           "\n" \
+                                           "void main()\n" \
+                                           "{\n" \
+                                           "    FragColor = vertexColor;\n" \
+                                           "}";
+
+  OGLShader fshader(fragment_shader_code, OGLShader::ShaderType::FRAGMENT);
 
   // initialize imGUI
   ImGui::CreateContext();

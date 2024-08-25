@@ -15,6 +15,10 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/libs/sdl)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/glad)
 
+## add magic enum (extends to use of enums)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/libs/magic_enum)
+
 ## Add ImGUI library
 
 include_directories(${PROJECT_SOURCE_DIR}/libs/gui)
@@ -50,11 +54,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                       SDL3-static
                       ${OPENGL_LIBRARIES}
                       glad
-                      spdlog::spdlog)
+                      spdlog::spdlog
+                      magic_enum::magic_enum)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-		                   $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>
-                           $<TARGET_PROPERTY:glad,INTERFACE_INCLUDE_DIRECTORIES)
+                           $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>
+                           $<TARGET_PROPERTY:glad,INTERFACE_INCLUDE_DIRECTORIES
+                           $<TARGET_PROPERTY:magic_enum::magic_enum,INTERFACE_INCLUDE_DIRECTORIES)
 
 ## Compiler Options
 
