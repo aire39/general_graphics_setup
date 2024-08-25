@@ -2,6 +2,7 @@
 #include <windows.h>
 #endif
 
+#include <cmath>
 #include <string>
 
 #include <glad/glad.h>
@@ -14,7 +15,9 @@
 
 #include "GraphicsWindow.h"
 #include "graphics/OGLShader.h"
+#include "graphics/ShaderProgram.h"
 
+void DrawPrimitive(ShaderProgram & shader_program);
 int32_t WindowResize(void * data, SDL_Event * event);
 
 int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
@@ -56,12 +59,14 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
   const std::string vertex_shader_code = "#version 330 core\n" \
                                          "layout (location = 0) in vec3 aPos; // the position variable has attribute position 0\n" \
                                          "  \n" \
+                                         "uniform vec4 color; // specify a color output to the fragment shader\n" \
                                          "out vec4 vertexColor; // specify a color output to the fragment shader\n" \
                                          "\n" \
                                          "void main()\n" \
                                          "{\n" \
                                          "    gl_Position = vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
-                                         "    vertexColor = vec4(0.5, 0.0, 0.0, 1.0); // set the output variable to a dark-red color\n" \
+                                         "    //vertexColor = vec4(0.5, 0.0, 0.0, 1.0); // set the output variable to a dark-red color\n" \
+                                         "    vertexColor = color;\n" \
                                          "}";
 
   OGLShader vshader(vertex_shader_code, OGLShader::ShaderType::VERTEX);
@@ -78,11 +83,15 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
 
   OGLShader fshader(fragment_shader_code, OGLShader::ShaderType::FRAGMENT);
 
+  ShaderProgram shader_program;
+  shader_program.AttachShader({vshader, fshader});
+  shader_program.Use();
+
   // initialize imGUI
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
 
-  const char * glsl_version = "#version 150";
+  const char * glsl_version = "#version 330";
   ImGui_ImplSDL3_InitForOpenGL(graphics_window.GetSDLWindow(), graphics_window.GetOpenGLContext()->GetContext());
   ImGui_ImplOpenGL3_Init(glsl_version);
 
@@ -117,6 +126,8 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
 
     // do work
 
+    DrawPrimitive(shader_program);
+
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     graphics_window.SwapBuffers();
   }
@@ -131,6 +142,39 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
   SDL_Quit();
 
   return 0;
+}
+
+void DrawPrimitive(ShaderProgram & shader_programs)
+{
+  static float vertices[] = {
+      // positions        // colors
+      0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
+     -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
+      0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top
+  };
+
+  static GLuint vao_handle = 0;
+  glGenVertexArrays(1, &vao_handle);
+  glBindVertexArray(vao_handle);
+
+  static GLuint vbo_handle = 0;
+  glGenBuffers(1, &vbo_handle);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_handle);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
+  glEnableVertexAttribArray(0);
+
+
+  static float timeValue = 0.1f;
+  timeValue += 0.1f;
+
+  float greenValue = std::sin(timeValue) / 2.0f + 0.5f;
+  float redValue = std::cos(timeValue) / 2.0f + 0.5f;
+  int vertexColorLocation = glGetUniformLocation(shader_programs.GetProgramId(), "color");
+  glUniform4f(vertexColorLocation, redValue, greenValue, 0.0f, 1.0f);
+
+  // now render the triangle
+  glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 int32_t WindowResize(void * data, SDL_Event * event)
