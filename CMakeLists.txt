@@ -31,6 +31,10 @@ file(GLOB IMGUI_SRC_SDLSUPPORT ${PROJECT_SOURCE_DIR}/libs/gui/imgui/backends/img
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog)
 
+## Add GLM Math Library
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/libs/glm)
+
 ## Add OpenGL packages
 find_package(OpenGL REQUIRED)
 
@@ -55,12 +59,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                       ${OPENGL_LIBRARIES}
                       glad
                       spdlog::spdlog
-                      magic_enum::magic_enum)
+                      magic_enum::magic_enum
+                      glm::glm)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>
                            $<TARGET_PROPERTY:glad,INTERFACE_INCLUDE_DIRECTORIES
-                           $<TARGET_PROPERTY:magic_enum::magic_enum,INTERFACE_INCLUDE_DIRECTORIES)
+                           $<TARGET_PROPERTY:magic_enum::magic_enum,INTERFACE_INCLUDE_DIRECTORIES
+                           $<TARGET_PROPERTY:glm::glm,INTERFACE_INCLUDE_DIRECTORIES)
 
 ## Compiler Options
 

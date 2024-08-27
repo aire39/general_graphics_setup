@@ -13,6 +13,9 @@
 #include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "GraphicsWindow.h"
 #include "graphics/OGLShader.h"
 #include "graphics/ShaderProgram.h"
@@ -60,11 +63,12 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
                                          "layout (location = 0) in vec3 aPos; // the position variable has attribute position 0\n" \
                                          "  \n" \
                                          "uniform vec4 color; // specify a color output to the fragment shader\n" \
+                                         "uniform mat4 ortho_mat; // specify a color output to the fragment shader\n" \
                                          "out vec4 vertexColor; // specify a color output to the fragment shader\n" \
                                          "\n" \
                                          "void main()\n" \
                                          "{\n" \
-                                         "    gl_Position = vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
+                                         "    gl_Position = ortho_mat * vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
                                          "    //vertexColor = vec4(0.5, 0.0, 0.0, 1.0); // set the output variable to a dark-red color\n" \
                                          "    vertexColor = color;\n" \
                                          "}";
@@ -146,6 +150,16 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
 
 void DrawPrimitive(ShaderProgram & shader_programs)
 {
+
+  constexpr float r =  1.0f * (800.0f / 600.0f);
+  constexpr float l = -1.0f * (800.0f / 600.0f);
+  constexpr float t =  1.0f * (800.0f / 600.0f);
+  constexpr float b = -1.0f * (800.0f / 600.0f);
+  constexpr float f =  100.0f;
+  constexpr float n =  0.1f;
+
+  auto ortho_matrix = glm::ortho(l, r, b, t, n, f);
+
   static float vertices[] = {
       // positions        // colors
       0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
@@ -165,13 +179,17 @@ void DrawPrimitive(ShaderProgram & shader_programs)
   glEnableVertexAttribArray(0);
 
 
-  static float timeValue = 0.1f;
-  timeValue += 0.1f;
+  static float timeValue = 0.01f;
+  timeValue += 0.05f;
 
-  float greenValue = std::sin(timeValue) / 2.0f + 0.5f;
-  float redValue = std::cos(timeValue) / 2.0f + 0.5f;
+  float green_value = std::sin(timeValue) / 2.0f + 0.5f;
+  float red_value = std::cos(timeValue) / 2.0f + 0.5f;
+  float blue_value = std::sin(timeValue) / 3.0f + 0.5f;
   int vertexColorLocation = glGetUniformLocation(shader_programs.GetProgramId(), "color");
-  glUniform4f(vertexColorLocation, redValue, greenValue, 0.0f, 1.0f);
+  glUniform4f(vertexColorLocation, red_value, green_value, blue_value, 1.0f);
+
+  int orthoMatLocation = glGetUniformLocation(shader_programs.GetProgramId(), "ortho_mat");
+  glUniformMatrix4fv(orthoMatLocation, 1, GL_TRUE, &ortho_matrix[0][0]);
 
   // now render the triangle
   glDrawArrays(GL_TRIANGLES, 0, 3);

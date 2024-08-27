@@ -10,3 +10,6 @@
 [submodule "libs/magic_enum"]
 	path = libs/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
+[submodule "libs/glm"]
+	path = libs/glm
+	url = https://github.com/g-truc/glm.git
