@@ -68,6 +68,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                            $<TARGET_PROPERTY:magic_enum::magic_enum,INTERFACE_INCLUDE_DIRECTORIES
                            $<TARGET_PROPERTY:glm::glm,INTERFACE_INCLUDE_DIRECTORIES)
 
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                   ${CMAKE_SOURCE_DIR}/glsl
+                   ${CMAKE_CURRENT_BINARY_DIR}/glsl)
+
 ## Compiler Options
 
 if (MSVC)

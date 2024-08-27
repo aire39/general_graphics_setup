@@ -69,11 +69,11 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
                                          "void main()\n" \
                                          "{\n" \
                                          "    gl_Position = ortho_mat * vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
-                                         "    //vertexColor = vec4(0.5, 0.0, 0.0, 1.0); // set the output variable to a dark-red color\n" \
                                          "    vertexColor = color;\n" \
                                          "}";
 
   OGLShader vshader(vertex_shader_code, OGLShader::ShaderType::VERTEX);
+  //OGLShader vshader("glsl/simple.vert"); // example of loading vertex shader file
 
   const std::string fragment_shader_code = "#version 330 core\n" \
                                            "out vec4 FragColor;\n" \
@@ -86,6 +86,7 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
                                            "}";
 
   OGLShader fshader(fragment_shader_code, OGLShader::ShaderType::FRAGMENT);
+  //OGLShader fshader("glsl/simple.frag"); // example of loading fragment/pixel shader file
 
   ShaderProgram shader_program;
   shader_program.AttachShader({vshader, fshader});
