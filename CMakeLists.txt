@@ -35,6 +35,14 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/glm)
 
+## Add CLI11 Command Line Parsing Library
+
+set (CLI11_BUILD_DOCS OFF)
+set (CLI11_BUILD_EXAMPLES OFF)
+set (CLI11_BUILD_EXAMPLES_JSON OFF)
+set (CLI11_BUILD_TESTS OFF)
+add_subdirectory(${PROJECT_SOURCE_DIR}/libs/cli11)
+
 ## Add OpenGL packages
 find_package(OpenGL REQUIRED)
 
@@ -60,13 +68,15 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                       glad
                       spdlog::spdlog
                       magic_enum::magic_enum
-                      glm::glm)
+                      glm::glm
+                      CLI11::CLI11)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>
                            $<TARGET_PROPERTY:glad,INTERFACE_INCLUDE_DIRECTORIES
                            $<TARGET_PROPERTY:magic_enum::magic_enum,INTERFACE_INCLUDE_DIRECTORIES
-                           $<TARGET_PROPERTY:glm::glm,INTERFACE_INCLUDE_DIRECTORIES)
+                           $<TARGET_PROPERTY:glm::glm,INTERFACE_INCLUDE_DIRECTORIES
+                           $<TARGET_PROPERTY:CLI11::CLI11,INTERFACE_INCLUDE_DIRECTORIES)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
