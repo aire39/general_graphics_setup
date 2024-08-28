@@ -16,6 +16,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <CLI/App.hpp>
+#include <CLI/Formatter.hpp>
+#include <CLI/Config.hpp>
+
 #include "GraphicsWindow.h"
 #include "graphics/OGLShader.h"
 #include "graphics/ShaderProgram.h"
@@ -23,7 +27,7 @@
 void DrawPrimitive(ShaderProgram & shader_program);
 int32_t WindowResize(void * data, SDL_Event * event);
 
-int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
+int32_t main(int32_t argc, char*argv[])
 {
   #ifdef _WIN32
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -35,6 +39,12 @@ int32_t main([[maybe_unused]]int32_t argc, [[maybe_unused]]char*argv[])
       }
     }
   #endif
+
+  CLI::App app("easily setup graphics source for getting started with opengl and potentially other graphic libraries for <reason for template>", "graphics");
+
+  // add command line options,flags,etc
+
+  CLI11_PARSE(app, argc, argv);
 
   spdlog::info("hello graphics world!");
 
