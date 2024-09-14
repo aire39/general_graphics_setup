@@ -20,24 +20,26 @@ class GraphicsWindow
 
     void SetOpenGLContext(std::unique_ptr<OpenGLContext> && gl_context) noexcept;
     void SetOpenGLContext(std::unique_ptr<OpenGLContext> & gl_context);
-    static void SetBackgoundColor(math_types::float4 background_color);
+    static void SetBackgroundColor(math_types::float4 background_color);
     static void ClearWindow();
 
     [[nodiscard]] bool IsWindowInitialized() const;
 
     [[nodiscard]] SDL_Window * GetSDLWindow() const;
-    OpenGLContext * GetOpenGLContext() const;
+    [[nodiscard]] OpenGLContext * GetOpenGLContext() const;
 
     void SwapBuffers() const;
 
     void Destroy();
 
   private:
+    static inline bool windowInitialized = false;
+
     static void DestroyWindow(SDL_Window*);
     std::unique_ptr<SDL_Window, void (*)(SDL_Window*)> sdlWindow;
 
-    [[maybe_unused]]std::unique_ptr<OpenGLContext> glContext;
-    int32_t windowWidth;
-    int32_t windowHeight;
+    int32_t windowWidth = -1;
+    int32_t windowHeight = -1;
     math_types::float4 backgroundColor {0.4f, 0.4f, 0.9f, 1.0f};
+    [[maybe_unused]]std::unique_ptr<OpenGLContext> glContext;
 };

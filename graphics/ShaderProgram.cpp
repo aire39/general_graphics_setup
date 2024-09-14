@@ -1,13 +1,23 @@
 #include "ShaderProgram.h"
 
+#include <ranges>
+
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bundled/color.h>
 
 #include <magic_enum/magic_enum.hpp>
 
+#include "Texture2D.h"
+
 ShaderProgram::ShaderProgram()
 {
   handle = glCreateProgram();
+}
+
+ShaderProgram::ShaderProgram(const OGLShader & shader_a, const OGLShader & shader_b)
+  : ShaderProgram()
+{
+  AttachShader({shader_a, shader_b});
 }
 
 ShaderProgram::~ShaderProgram()
@@ -28,8 +38,8 @@ void ShaderProgram::AttachShader(const OGLShader & shader)
 
   // check to see if at least vertex and fragment shaders exist before attempting to link
 
-  bool has_basic_vertex_shader = (shaderList.find(OGLShader::ShaderType::VERTEX) != shaderList.end());
-  bool has_basic_fragment_shader = (shaderList.find(OGLShader::ShaderType::FRAGMENT) != shaderList.end());
+  const bool has_basic_vertex_shader = shaderList.contains(OGLShader::ShaderType::VERTEX);
+  const bool has_basic_fragment_shader = shaderList.contains(OGLShader::ShaderType::FRAGMENT);
 
   if (has_basic_vertex_shader && has_basic_fragment_shader)
   {
@@ -52,8 +62,8 @@ void ShaderProgram::AttachShader(std::span<const OGLShader> shader_list)
 
   // check to see if at least vertex and fragment shaders exist before attempting to link
 
-  bool has_basic_vertex_shader = (shaderList.find(OGLShader::ShaderType::VERTEX) != shaderList.end());
-  bool has_basic_fragment_shader = (shaderList.find(OGLShader::ShaderType::FRAGMENT) != shaderList.end());
+  const bool has_basic_vertex_shader = shaderList.contains(OGLShader::ShaderType::VERTEX);
+  const bool has_basic_fragment_shader = shaderList.contains(OGLShader::ShaderType::FRAGMENT);
 
   if (has_basic_vertex_shader && has_basic_fragment_shader)
   {
@@ -76,8 +86,8 @@ void ShaderProgram::AttachShader(std::vector<std::reference_wrapper<const OGLSha
 
   // check to see if at least vertex and fragment shaders exist before attempting to link
 
-  bool has_basic_vertex_shader = (shaderList.find(OGLShader::ShaderType::VERTEX) != shaderList.end());
-  bool has_basic_fragment_shader = (shaderList.find(OGLShader::ShaderType::FRAGMENT) != shaderList.end());
+  const bool has_basic_vertex_shader = shaderList.contains(OGLShader::ShaderType::VERTEX);
+  const bool has_basic_fragment_shader = shaderList.contains(OGLShader::ShaderType::FRAGMENT);
 
   if (has_basic_vertex_shader && has_basic_fragment_shader)
   {
@@ -94,17 +104,37 @@ void ShaderProgram::Use() const
   glUseProgram(handle);
 }
 
-void ShaderProgram::SetBool(const std::string &name, bool value) const
+void ShaderProgram::SetBool(const std::string &name, const bool value) const
 {
-  glUniform1i(glGetUniformLocation(handle, name.c_str()), (int)value);
+  glUniform1i(glGetUniformLocation(handle, name.c_str()), static_cast<int>(value));
 }
-void ShaderProgram::SetInt(const std::string &name, int value) const
+void ShaderProgram::SetInt(const std::string &name, const int value) const
 {
   glUniform1i(glGetUniformLocation(handle, name.c_str()), value);
 }
-void ShaderProgram::SetFloat(const std::string &name, float value) const
+void ShaderProgram::SetFloat(const std::string &name, const float value) const
 {
   glUniform1f(glGetUniformLocation(handle, name.c_str()), value);
+}
+
+void ShaderProgram::SetFloat3(const std::string &name, const float* value) const
+{
+  glUniform3fv(glGetUniformLocation(handle, name.c_str()), 1, value);
+}
+
+void ShaderProgram::SetFloat4(const std::string &name, const float* value) const
+{
+  glUniform4fv(glGetUniformLocation(handle, name.c_str()), 1, value);
+}
+
+void ShaderProgram::SetFloat4x4(const std::string &name, const float* value, const bool transpose) const
+{
+  glUniformMatrix4fv(glGetUniformLocation(handle, name.c_str()), 1, transpose, value);
+}
+
+void ShaderProgram::SetTexture2D(const std::string &name, const Texture2D* texture) const
+{
+  glUniform1ui(glGetUniformLocation(handle, name.c_str()), texture->GetActiveTextureUnit());
 }
 
 void ShaderProgram::DetachShaders(const OGLShader & shader) const
@@ -126,11 +156,13 @@ void ShaderProgram::DetachShaders(std::vector<std::reference_wrapper<const OGLSh
   {
     glDetachShader(handle, shader.get().GetShaderId());
   }
+
+  glGetError(); // ignore the error produced by calling glDetachShader so soon
 }
 
 void ShaderProgram::LinkShaders()
 {
-  for(const auto [s_type, shader] : shaderList)
+  for(const auto &shader: shaderList | std::views::values)
   {
     glAttachShader(handle, shader->GetShaderId());
   }
@@ -152,7 +184,7 @@ void ShaderProgram::LinkShaders()
   else
   {
     std::string shader_type_list_str;
-    for (const auto & [s_type, shader] : shaderList)
+    for (const auto &s_type: shaderList | std::views::keys)
     {
       shader_type_list_str += std::string(magic_enum::enum_name(s_type)) + ",";
     }

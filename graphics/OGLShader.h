@@ -9,7 +9,7 @@
 class OGLShader
 {
   public:
-    enum class ShaderType : int8_t {VERTEX, FRAGMENT};
+    enum class ShaderType : uint8_t {NONE, VERTEX, FRAGMENT};
 
     OGLShader() = delete;
     [[maybe_unused]] explicit OGLShader(const std::string& file_path);
