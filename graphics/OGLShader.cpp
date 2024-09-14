@@ -15,8 +15,8 @@
     if(file_extension.contains("vert") || file_extension.contains("frag"))
     {
       std::string shader_code;
-
       std::string text_line;
+
       while (std::getline(file, text_line))
       {
         shader_code += text_line + "\n";
@@ -32,8 +32,13 @@
         {
           shaderType = ShaderType::FRAGMENT;
         }
+        else
+        {
+          shaderType = ShaderType::NONE;
+        }
 
         Init(shader_code);
+
         if (Compile())
         {
           isShaderCompiled = true;
@@ -99,6 +104,7 @@ OGLShader::~OGLShader()
 
 void OGLShader::Init(const std::string& shader_code)
 {
+  bool valid_shader_type = true;
   switch (shaderType)
   {
     case ShaderType::VERTEX:
@@ -108,13 +114,22 @@ void OGLShader::Init(const std::string& shader_code)
     case ShaderType::FRAGMENT:
       handle = glCreateShader(GL_FRAGMENT_SHADER);
       break;
+
+    case ShaderType::NONE:
+    default:
+     spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "No such shader type!"));
+     valid_shader_type = false;
+      break;
   }
 
-  const auto shader_type_name = magic_enum::enum_name(shaderType);
-  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "Created Shader {} ({})", shader_type_name.data(), handle));
+  if (valid_shader_type)
+  {
+    const auto shader_type_name = magic_enum::enum_name(shaderType);
+    spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "Created Shader {} ({})", shader_type_name.data(), handle));
 
-  const char * sc_str = shader_code.c_str();
-  glShaderSource(handle, 1, &sc_str, nullptr);
+    const char * sc_str = shader_code.c_str();
+    glShaderSource(handle, 1, &sc_str, nullptr);
+  }
 }
 
 bool OGLShader::Compile()
@@ -130,11 +145,11 @@ bool OGLShader::Compile()
     glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &max_length);
     glGetShaderInfoLog(handle, max_length, &max_length, compileStatusLog);
 
-    spdlog::error(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "shader compile error:\n{}", compileStatusLog));
+    spdlog::error(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Shader compile error:\n{}", compileStatusLog));
   }
   else
   {
-    spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_green), "compiled successfully!"));
+    spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_green), "Compiled successfully!"));
   }
 
   return (compile_status != 0);

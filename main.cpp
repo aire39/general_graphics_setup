@@ -11,44 +11,43 @@
 #include <imgui/backends/imgui_impl_sdl3.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
+
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/bundled/color.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <CLI/CLI.hpp>
 
 #include "GraphicsWindow.h"
 #include "graphics/OGLShader.h"
 #include "graphics/ShaderProgram.h"
+#include "graphics/EnhanceSprite.h"
 
-void DrawPrimitive(const ShaderProgram & shader_program);
+#include "graphics/PrebuiltShaderSources.h"
+#include "graphics/Filters.h"
+
+void SetupShaderParams(const ShaderProgram & shader_program);
 bool WindowResize(void * data, SDL_Event * event);
+void SetConsoleMode();
+void PrintStartMessage();
 
 int32_t main(int32_t argc, char*argv[])
 {
-  #ifdef _WIN32
-    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (handle != INVALID_HANDLE_VALUE) {
-      DWORD mode = 0;
-      if (GetConsoleMode(handle, &mode)) {
-        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        SetConsoleMode(handle, mode);
-      }
-    }
-  #endif
+  SetConsoleMode();
 
   CLI::App app("easily setup graphics source for getting started with opengl and potentially other graphic libraries for <reason for template>", "graphics");
 
   // add command line options,flags,etc
 
-  CLI11_PARSE(app, argc, argv);
+  CLI11_PARSE(app, argc, argv)
 
-  spdlog::info("hello graphics world!");
+  PrintStartMessage();
 
   // sdl and window initialization
-
-  SDL_Init(SDL_INIT_VIDEO);
 
   constexpr static std::string_view window_name = "Graphics Window";
   constexpr int32_t window_width  = 800;
@@ -66,47 +65,26 @@ int32_t main(int32_t argc, char*argv[])
 
   gladLoadGLLoader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress));
 
-  // this is a quick test for calling opengl functions
-  const std::string vertex_shader_code = "#version 330 core\n" \
-                                         "layout (location = 0) in vec3 aPos; // the position variable has attribute position 0\n" \
-                                         "  \n" \
-                                         "uniform vec4 color; // specify a color output to the fragment shader\n" \
-                                         "uniform mat4 ortho_mat; // specify a color output to the fragment shader\n" \
-                                         "out vec4 vertexColor; // specify a color output to the fragment shader\n" \
-                                         "\n" \
-                                         "void main()\n" \
-                                         "{\n" \
-                                         "    gl_Position = ortho_mat * vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
-                                         "    vertexColor = color;\n" \
-                                         "}";
-
-  OGLShader vshader(vertex_shader_code, OGLShader::ShaderType::VERTEX);
-  //OGLShader vshader("glsl/simple.vert"); // example of loading vertex shader file
-
-  const std::string fragment_shader_code = "#version 330 core\n" \
-                                           "out vec4 FragColor;\n" \
-                                           "  \n" \
-                                           "in vec4 vertexColor; // the input variable from the vertex shader (same name and same type)  \n" \
-                                           "\n" \
-                                           "void main()\n" \
-                                           "{\n" \
-                                           "    FragColor = vertexColor;\n" \
-                                           "}";
-
-  OGLShader fshader(fragment_shader_code, OGLShader::ShaderType::FRAGMENT);
-  //OGLShader fshader("glsl/simple.frag"); // example of loading fragment/pixel shader file
-
-  ShaderProgram shader_program;
-  shader_program.AttachShader({vshader, fshader});
+  const OGLShader vshader(prebuilt_shaders::vertex_shader_code.data(), OGLShader::ShaderType::VERTEX);
+  const OGLShader fshader(prebuilt_shaders::fragment_shader_code.data(), OGLShader::ShaderType::FRAGMENT);
+  const ShaderProgram shader_program(vshader, fshader);
   shader_program.Use();
+
+  // Init Sprite with Texture
+  EnhanceSprite sprite;
+  sprite.LoadTexture("../images/park.jpg");
+  shader_program.SetTexture2D("image", sprite.GetTexture());
+
+  // Apply gray scale filter on image
+  sprite.ProcessFilter(filter::functions::convert_to_grayscale, false);
 
   // initialize imGUI
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
 
-  const char * glsl_version = "#version 330";
+  constexpr std::string_view glsl_version = "#version 450";
   ImGui_ImplSDL3_InitForOpenGL(graphics_window.GetSDLWindow(), graphics_window.GetOpenGLContext()->GetContext());
-  ImGui_ImplOpenGL3_Init(glsl_version);
+  ImGui_ImplOpenGL3_Init(glsl_version.data());
 
   SDL_AddEventWatch(WindowResize, graphics_window.GetSDLWindow());
 
@@ -139,7 +117,19 @@ int32_t main(int32_t argc, char*argv[])
 
     // do work
 
-    DrawPrimitive(shader_program);
+    SetupShaderParams(shader_program);
+
+    static float location_time = 0.0f;
+    sprite.SetPosition({100.0f * std::cos(location_time), 100.0f * std::sin(location_time)});
+    location_time += 0.05f;
+
+    auto model_matrix = glm::mat4(1.0f);
+    model_matrix = glm::translate(model_matrix, sprite.GetPosition());
+    model_matrix = glm::rotate(model_matrix, glm::radians(location_time * -100.0f), {0.0f, 0.0f, 1.0f});
+    model_matrix = glm::scale(model_matrix, {100.0f, 100.0f, 1.0f});
+    shader_program.SetFloat4x4("model", glm::value_ptr(model_matrix));
+
+    sprite.Draw();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     graphics_window.SwapBuffers();
@@ -157,51 +147,27 @@ int32_t main(int32_t argc, char*argv[])
   return 0;
 }
 
-void DrawPrimitive(const ShaderProgram & shader_programs)
+void SetupShaderParams(const ShaderProgram & shader_program)
 {
-
-  constexpr float r =  1.0f * (800.0f / 600.0f);
-  constexpr float l = -1.0f * (800.0f / 600.0f);
-  constexpr float t =  1.0f * (800.0f / 600.0f);
-  constexpr float b = -1.0f * (800.0f / 600.0f);
-  constexpr float f =  100.0f;
-  constexpr float n =  0.1f;
+  constexpr float l = -400;
+  constexpr float r =  400;
+  constexpr float b =  300;
+  constexpr float t = -300;
+  constexpr float n = -1.0f;
+  constexpr float f =  1.0f;
 
   auto ortho_matrix = glm::ortho(l, r, b, t, n, f);
-
-  static float vertices[] = {
-      // positions        // colors
-      0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-     -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-      0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top
-  };
-
-  static GLuint vao_handle = 0;
-  glGenVertexArrays(1, &vao_handle);
-  glBindVertexArray(vao_handle);
-
-  static GLuint vbo_handle = 0;
-  glGenBuffers(1, &vbo_handle);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_handle);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
-  glEnableVertexAttribArray(0);
-
+  shader_program.SetFloat4x4("ortho", glm::value_ptr(ortho_matrix));
 
   static float timeValue = 0.01f;
   timeValue += 0.05f;
 
-  float green_value = std::sin(timeValue) / 2.0f + 0.5f;
-  float red_value = std::cos(timeValue) / 2.0f + 0.5f;
-  float blue_value = std::sin(timeValue) / 3.0f + 0.5f;
-  int vertexColorLocation = glGetUniformLocation(shader_programs.GetProgramId(), "color");
-  glUniform4f(vertexColorLocation, red_value, green_value, blue_value, 1.0f);
+  const float green_value = std::sin(timeValue) / 2.0f + 0.5f;
+  const float red_value = std::cos(timeValue) / 2.0f + 0.5f;
+  const float blue_value = std::sin(timeValue) / 3.0f + 0.5f;
+  const float color[] = {red_value, green_value, blue_value};
 
-  int orthoMatLocation = glGetUniformLocation(shader_programs.GetProgramId(), "ortho_mat");
-  glUniformMatrix4fv(orthoMatLocation, 1, GL_TRUE, &ortho_matrix[0][0]);
-
-  // now render the triangle
-  glDrawArrays(GL_TRIANGLES, 0, 3);
+  shader_program.SetFloat4("color", color);
 }
 
 bool WindowResize(void * data, SDL_Event * event)
@@ -210,13 +176,34 @@ bool WindowResize(void * data, SDL_Event * event)
 
   if (event->window.type == SDL_EVENT_WINDOW_RESIZED)
   {
-    SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
+    const SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
     if (window == static_cast<SDL_Window*>(data))
     {
-      spdlog::info("window resizing...");
+      spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
       event_handled = true;
     }
   }
 
   return event_handled;
+}
+
+void SetConsoleMode()
+{
+  #ifdef _WIN32
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (handle != INVALID_HANDLE_VALUE) {
+      DWORD mode = 0;
+      if (GetConsoleMode(handle, &mode)) {
+        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        SetConsoleMode(handle, mode);
+      }
+    }
+  #endif
+}
+
+void PrintStartMessage()
+{
+  spdlog::info(
+    fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold
+                   ,"Starting: Hello, Graphics World!"));
 }

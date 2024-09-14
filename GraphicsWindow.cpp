@@ -12,18 +12,24 @@
 }
 
 GraphicsWindow::GraphicsWindow(const std::string& window_title, int32_t window_width, int32_t window_height, SDL_WindowFlags window_flags)
-  : sdlWindow (
-    std::unique_ptr<SDL_Window, void (*)(SDL_Window*)>(
-      SDL_CreateWindow(window_title.c_str(),
-                       window_width,
-                       window_height,
-                       window_flags),
-                       [](SDL_Window *sdl_window) -> void { GraphicsWindow::DestroyWindow(sdl_window); }
-    )
-  )
+  :sdlWindow(nullptr, nullptr)
   ,windowWidth (window_width)
   ,windowHeight (window_height)
 {
+  if (!GraphicsWindow::windowInitialized)
+  {
+    SDL_Init(SDL_INIT_VIDEO);
+    GraphicsWindow::windowInitialized = true;
+  }
+
+  sdlWindow = std::unique_ptr<SDL_Window, void (*)(SDL_Window*)>(
+    SDL_CreateWindow(window_title.c_str()
+                      ,window_width
+                      ,window_height
+                      ,window_flags)
+                      ,[](SDL_Window *sdl_window) -> void { GraphicsWindow::DestroyWindow(sdl_window); }
+    );
+
   if (((window_flags & SDL_WINDOW_OPENGL) != 0) && (glContext == nullptr))
   {
     spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "Create OpenGLContext!"));
@@ -46,7 +52,7 @@ void GraphicsWindow::SetOpenGLContext(std::unique_ptr<OpenGLContext> && gl_conte
 {
   glContext = std::move(gl_context);
 
-  SetBackgoundColor(backgroundColor);
+  SetBackgroundColor(backgroundColor);
   glViewport(0, 0, windowWidth, windowHeight);
 }
 
@@ -54,11 +60,11 @@ void GraphicsWindow::SetOpenGLContext(std::unique_ptr<OpenGLContext> & gl_contex
 {
   glContext = std::move(gl_context);
 
-  SetBackgoundColor(backgroundColor);
+  SetBackgroundColor(backgroundColor);
   glViewport(0, 0, windowWidth, windowHeight);
 }
 
-void GraphicsWindow::SetBackgoundColor(math_types::float4 background_color)
+void GraphicsWindow::SetBackgroundColor(math_types::float4 background_color)
 {
   glClearColor(background_color.x, background_color.y, background_color.z, background_color.w);
 }

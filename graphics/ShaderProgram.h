@@ -7,10 +7,13 @@
 
 #include <glad/glad.h>
 
+class Texture2D;
+
 class ShaderProgram
 {
   public:
     ShaderProgram();
+    explicit ShaderProgram(const OGLShader & shader_a, const OGLShader & shader_b);
     ~ShaderProgram();
 
     [[nodiscard]] GLuint GetProgramId() const;
@@ -23,6 +26,10 @@ class ShaderProgram
     void SetBool(const std::string &name, bool value) const;
     void SetInt(const std::string &name, int value) const;
     void SetFloat(const std::string &name, float value) const;
+    void SetFloat3(const std::string &name, const float* value) const;
+    void SetFloat4(const std::string &name, const float* value) const;
+    void SetFloat4x4(const std::string &name, const float* value, bool transpose = false) const;
+    void SetTexture2D(const std::string &name, const Texture2D* texture) const;
 
 private:
     void DetachShaders(const OGLShader & shader) const;
