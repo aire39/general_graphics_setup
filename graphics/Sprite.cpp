@@ -12,7 +12,12 @@ Sprite::Sprite()
  : vertices(num_sprite_verts)
  , indices(num_sprite_indices)
 {
+  glGenVertexArrays(1, &vaoHandle);
+  glGenBuffers(1, &vboHandle);
+  glGenBuffers(1, &iboHandle);
+
   Init();
+  Update();
 }
 
 [[maybe_unused]] void Sprite::SetPosition(glm::vec2 pos)
@@ -23,6 +28,21 @@ Sprite::Sprite()
 [[maybe_unused]] void Sprite::SetPosition(glm::vec3 pos)
 {
   position = pos;
+}
+
+glm::fvec3 Sprite::GetPosition()
+{
+  return position;
+}
+
+void Sprite::SetColor(glm::vec3 color)
+{
+  for (auto & v : vertices)
+  {
+    v.color = color;
+  }
+
+  Update();
 }
 
 void Sprite::Draw()
@@ -36,7 +56,7 @@ void Sprite::Draw()
 
 void Sprite::Init()
 {
-  const uint32_t layout_data_size = sizeof(primitive::Vertex) * vertices.size();
+  const size_t layout_data_size = sizeof(primitive::Vertex) * vertices.size();
   spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "Sprite size: {} bytes", layout_data_size));
   vertices[0] = {.position = {-0.5f, -0.5f, 0.0f}, .color = {1.0f, 1.0f, 1.0f}, .uvcoords_0 = {0.0f, 0.0f}, .uvcoords_1 = {0.0f, 0.0f}};
   vertices[1] = {.position = { 0.5f, -0.5f, 0.0f}, .color = {1.0f, 1.0f, 1.0f}, .uvcoords_0 = {1.0f, 0.0f}, .uvcoords_1 = {1.0f, 0.0f}};
@@ -47,12 +67,14 @@ void Sprite::Init()
   indices[1] = 1;
   indices[2] = 3;
   indices[3] = 2;
+}
 
-  glGenVertexArrays(1, &vaoHandle);
+void Sprite::Update()
+{
   glBindVertexArray(vaoHandle);
   spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "vao handle id: {}", vaoHandle));
 
-  glGenBuffers(1, &vboHandle);
+
   glBindBuffer(GL_ARRAY_BUFFER, vboHandle);
   spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "vbo handle id: {}", vboHandle));
   glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(primitive::Vertex) * vertices.size()), vertices.data(), GL_STATIC_DRAW);
@@ -67,7 +89,7 @@ void Sprite::Init()
   glEnableVertexAttribArray(2);
   glEnableVertexAttribArray(3);
 
-  glGenBuffers(1, &iboHandle);
+
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboHandle);
   spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "ibo handle id: {}", iboHandle));
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * num_sprite_indices, indices.data(), GL_STATIC_DRAW);

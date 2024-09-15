@@ -14,6 +14,9 @@ class Sprite
 
    [[maybe_unused]] void SetPosition(glm::vec2 pos);
    [[maybe_unused]] void SetPosition(glm::vec3 pos);
+   [[maybe_unused]] glm::fvec3 GetPosition();
+
+   [[maybe_unused]] void SetColor(glm::vec3 color);
 
     virtual void Draw();
 
@@ -27,4 +30,5 @@ class Sprite
 
   private:
     void Init();
+    void Update();
 };
