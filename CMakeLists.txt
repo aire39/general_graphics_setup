@@ -60,7 +60,9 @@ add_executable(${PROJECT_NAME}
                GraphicsWindow.cpp
                OpenGLContext.h
                OpenGLContext.cpp
-               main.cpp)
+               main.cpp
+        graphics/PixelSprite.cpp
+        graphics/PixelSprite.h)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
                       SDL3-static
