@@ -15,10 +15,9 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-#include <CLI/App.hpp>
-#include <CLI/Formatter.hpp>
-#include <CLI/Config.hpp>
+#include <CLI/CLI.hpp>
 
 #include "GraphicsWindow.h"
 #include "graphics/OGLShader.h"
@@ -65,18 +64,20 @@ int32_t main(int32_t argc, char*argv[])
   // this is a quick test for calling opengl functions
   constexpr std::string_view vertex_shader_code = "#version 330 core\n" \
                                                   "layout (location = 0) in vec3 aPos; // the position variable has attribute position 0\n" \
-                                                  "layout (location = 1) in vec3 aCol; // the position variable has attribute position 1\n" \
-                                                  "layout (location = 2) in vec3 aUV0; // the position variable has attribute position 1\n" \
-                                                  "layout (location = 3) in vec3 aUV1; // the position variable has attribute position 1\n" \
-                                                  "  \n" \
+                                                  "layout (location = 1) in vec3 aCol; // the color variable has attribute position 1\n" \
+                                                  "layout (location = 2) in vec3 aUV0; // the texoord0 variable has attribute position 2\n" \
+                                                  "layout (location = 3) in vec3 aUV1; // the texoord1 variable has attribute position 3\n" \
+                                                  "\n" \
                                                   "uniform vec4 color; // specify a color output to the fragment shader\n" \
-                                                  "uniform mat4 ortho_mat; // specify a color output to the fragment shader\n" \
+                                                  "uniform mat4 ortho; // specify 2d view matrix\n" \
+                                                  "uniform mat4 model; // specify object location matrix\n" \
+                                                  "\n" \
                                                   "out vec4 vertexColor; // specify a color output to the fragment shader\n" \
                                                   "out vec4 col; // specify a color output to the fragment shader\n" \
                                                   "\n" \
                                                   "void main()\n" \
                                                   "{\n" \
-                                                  "    gl_Position = ortho_mat * vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
+                                                  "    gl_Position = ortho * model * vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
                                                   "    vertexColor = color;\n" \
                                                   "    col = vec4(aCol, 1.0);\n" \
                                                   "}";
@@ -145,6 +146,17 @@ int32_t main(int32_t argc, char*argv[])
     // do work
 
     SetupShaderParams(shader_program);
+
+    static float location_time = 0.0f;
+    sprite.SetPosition({100.0f * std::cos(location_time), 100.0f * std::sin(location_time)});
+    location_time += 0.05f;
+
+    auto model_matrix = glm::mat4(1.0f);
+    model_matrix = glm::translate(model_matrix, sprite.GetPosition());
+    model_matrix = glm::rotate(model_matrix, glm::radians(location_time * -100.0f), {0.0f, 0.0f, 1.0f});
+    model_matrix = glm::scale(model_matrix, {100.0f, 100.0f, 1.0f});
+    shader_program.SetFloat4x4("model", glm::value_ptr(model_matrix));
+
     sprite.Draw();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -165,14 +177,15 @@ int32_t main(int32_t argc, char*argv[])
 
 void SetupShaderParams(ShaderProgram & shader_program)
 {
-  constexpr float r =  1.0f * (800.0f / 600.0f);
-  constexpr float l = -1.0f * (800.0f / 600.0f);
-  constexpr float t =  1.0f * (800.0f / 600.0f);
-  constexpr float b = -1.0f * (800.0f / 600.0f);
-  constexpr float f =  100.0f;
-  constexpr float n =  0.1f;
+  constexpr float l = -400;
+  constexpr float r =  400;
+  constexpr float b =  300;
+  constexpr float t = -300;
+  constexpr float n = -1.0f;
+  constexpr float f =  1.0f;
 
   auto ortho_matrix = glm::ortho(l, r, b, t, n, f);
+  shader_program.SetFloat4x4("ortho", glm::value_ptr(ortho_matrix));
 
   static float timeValue = 0.01f;
   timeValue += 0.05f;
@@ -180,12 +193,10 @@ void SetupShaderParams(ShaderProgram & shader_program)
   float green_value = std::sin(timeValue) / 2.0f + 0.5f;
   float red_value = std::cos(timeValue) / 2.0f + 0.5f;
   float blue_value = std::sin(timeValue) / 3.0f + 0.5f;
-
-  int vertexColorLocation = glGetUniformLocation(shader_program.GetProgramId(), "color");
-  glUniform4f(vertexColorLocation, red_value, green_value, blue_value, 1.0f);
-  int orthoMatLocation = glGetUniformLocation(shader_program.GetProgramId(), "ortho_mat");
-  glUniformMatrix4fv(orthoMatLocation, 1, GL_TRUE, &ortho_matrix[0][0]);
+  float color[] = {red_value, green_value, blue_value};
+  shader_program.SetFloat4("color", color);
 }
+
 
 int32_t WindowResize(void * data, SDL_Event * event)
 {

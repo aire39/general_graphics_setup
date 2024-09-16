@@ -23,6 +23,9 @@ class ShaderProgram
     void SetBool(const std::string &name, bool value) const;
     void SetInt(const std::string &name, int value) const;
     void SetFloat(const std::string &name, float value) const;
+    void SetFloat3(const std::string &name, float* value) const;
+    void SetFloat4(const std::string &name, float* value) const;
+    void SetFloat4x4(const std::string &name, float* value, bool transpose = false) const;
 
 private:
     void DetachShaders(const OGLShader & shader) const;

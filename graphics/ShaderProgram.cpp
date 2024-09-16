@@ -107,6 +107,21 @@ void ShaderProgram::SetFloat(const std::string &name, float value) const
   glUniform1f(glGetUniformLocation(handle, name.c_str()), value);
 }
 
+void ShaderProgram::SetFloat3(const std::string &name, float* value) const
+{
+  glUniform3fv(glGetUniformLocation(handle, name.c_str()), 1, value);
+}
+
+void ShaderProgram::SetFloat4(const std::string &name, float* value) const
+{
+  glUniform4fv(glGetUniformLocation(handle, name.c_str()), 1, value);
+}
+
+void ShaderProgram::SetFloat4x4(const std::string &name, float* value, bool transpose) const
+{
+  glUniformMatrix4fv(glGetUniformLocation(handle, name.c_str()), 1, transpose, value);
+}
+
 void ShaderProgram::DetachShaders(const OGLShader & shader) const
 {
   glDetachShader(handle, shader.GetShaderId());
