@@ -1,0 +1,12 @@
+diff --git a/include/SDL3_image/SDL_image.h b/include/SDL3_image/SDL_image.h
+index 606fe57..29152fc 100644
+--- a/include/SDL3_image/SDL_image.h
++++ b/include/SDL3_image/SDL_image.h
+@@ -31,6 +31,7 @@
+ 
+ #include <SDL3/SDL.h>
+ #include <SDL3/SDL_begin_code.h>
++#include <stdbool.h>
+ 
+ /* Set up for C function definitions, even when using C++ */
+ #ifdef __cplusplus

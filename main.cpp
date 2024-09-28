@@ -11,40 +11,34 @@
 #include <imgui/backends/imgui_impl_sdl3.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <spdlog/spdlog.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-#include <CLI/App.hpp>
-#include <CLI/Formatter.hpp>
-#include <CLI/Config.hpp>
+#include <CLI/CLI.hpp>
 
 #include "GraphicsWindow.h"
 #include "graphics/OGLShader.h"
 #include "graphics/ShaderProgram.h"
+#include "graphics/PixelSprite.h"
+#include "graphics/Texture2D.h"
 
-void DrawPrimitive(ShaderProgram & shader_program);
+void SetupShaderParams(ShaderProgram & shader_programs);
 int32_t WindowResize(void * data, SDL_Event * event);
+void SetConsoleMode();
 
 int32_t main(int32_t argc, char*argv[])
 {
-  #ifdef _WIN32
-    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (handle != INVALID_HANDLE_VALUE) {
-      DWORD mode = 0;
-      if (GetConsoleMode(handle, &mode)) {
-        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        SetConsoleMode(handle, mode);
-      }
-    }
-  #endif
+  SetConsoleMode();
 
   CLI::App app("easily setup graphics source for getting started with opengl and potentially other graphic libraries for <reason for template>", "graphics");
 
   // add command line options,flags,etc
 
-  CLI11_PARSE(app, argc, argv);
+  CLI11_PARSE(app, argc, argv)
 
   spdlog::info("hello graphics world!");
 
@@ -69,38 +63,69 @@ int32_t main(int32_t argc, char*argv[])
   gladLoadGLLoader(reinterpret_cast<GLADloadproc>(SDL_GL_GetProcAddress));
 
   // this is a quick test for calling opengl functions
-  const std::string vertex_shader_code = "#version 330 core\n" \
-                                         "layout (location = 0) in vec3 aPos; // the position variable has attribute position 0\n" \
-                                         "  \n" \
-                                         "uniform vec4 color; // specify a color output to the fragment shader\n" \
-                                         "uniform mat4 ortho_mat; // specify a color output to the fragment shader\n" \
-                                         "out vec4 vertexColor; // specify a color output to the fragment shader\n" \
-                                         "\n" \
-                                         "void main()\n" \
-                                         "{\n" \
-                                         "    gl_Position = ortho_mat * vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
-                                         "    vertexColor = color;\n" \
-                                         "}";
+  constexpr std::string_view vertex_shader_code = "#version 330 core\n" \
+                                                  "layout (location = 0) in vec3 aPos; // the position variable has attribute position 0\n" \
+                                                  "layout (location = 1) in vec3 aCol; // the color variable has attribute position 1\n" \
+                                                  "layout (location = 2) in vec2 aUV0; // the texoord0 variable has attribute position 2\n" \
+                                                  "layout (location = 3) in vec2 aUV1; // the texoord1 variable has attribute position 3\n" \
+                                                  "\n" \
+                                                  "uniform vec4 color; // specify a color output to the fragment shader\n" \
+                                                  "uniform mat4 ortho; // specify 2d view matrix\n" \
+                                                  "uniform mat4 model; // specify object location matrix\n" \
+                                                  "\n" \
+                                                  "out vec4 vertexColor; // specify a color output to the fragment shader\n" \
+                                                  "out vec4 col; // specify a color output to the fragment shader\n" \
+                                                  "out vec2 texcoord0; // specify a color output to the fragment shader\n" \
+                                                  "\n" \
+                                                  "void main()\n" \
+                                                  "{\n" \
+                                                  "    gl_Position = ortho * model * vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor\n" \
+                                                  "    vertexColor = color;\n" \
+                                                  "    col = vec4(aCol, 1.0);\n" \
+                                                  "    texcoord0 = aUV0;\n" \
+                                                  "}";
 
-  OGLShader vshader(vertex_shader_code, OGLShader::ShaderType::VERTEX);
+  OGLShader vshader(vertex_shader_code.data(), OGLShader::ShaderType::VERTEX);
   //OGLShader vshader("glsl/simple.vert"); // example of loading vertex shader file
 
-  const std::string fragment_shader_code = "#version 330 core\n" \
-                                           "out vec4 FragColor;\n" \
-                                           "  \n" \
-                                           "in vec4 vertexColor; // the input variable from the vertex shader (same name and same type)  \n" \
-                                           "\n" \
-                                           "void main()\n" \
-                                           "{\n" \
-                                           "    FragColor = vertexColor;\n" \
-                                           "}";
+  constexpr std::string_view fragment_shader_code = "#version 330 core\n" \
+                                                    "out vec4 FragColor;\n" \
+                                                    "uniform sampler2D image;\n" \
+                                                    "  \n" \
+                                                    "in vec2 texcoord0;\n" \
+                                                    "in vec4 col;\n" \
+                                                    "in vec4 vertexColor; // the input variable from the vertex shader (same name and same type)  \n" \
+                                                    "\n" \
+                                                    "void main()\n" \
+                                                    "{\n" \
+                                                    "    vec4 tex_color = texture2D(image, texcoord0);" \
+                                                    "    //FragColor = vertexColor;\n" \
+                                                    "    FragColor = tex_color;\n" \
+                                                    "}";
 
-  OGLShader fshader(fragment_shader_code, OGLShader::ShaderType::FRAGMENT);
+  OGLShader fshader(fragment_shader_code.data(), OGLShader::ShaderType::FRAGMENT);
   //OGLShader fshader("glsl/simple.frag"); // example of loading fragment/pixel shader file
 
   ShaderProgram shader_program;
   shader_program.AttachShader({vshader, fshader});
   shader_program.Use();
+
+  // Init Texture
+  SDL_Surface* image = IMG_Load("../images/park.jpg");
+  Texture2D texture;
+
+  if (image)
+  {
+    texture.Load(reinterpret_cast<uint8_t *>(image->pixels), image->w, image->h, GL_RGB);
+  }
+  else
+  {
+    spdlog::error("No valid image loaded!");
+  }
+  shader_program.SetTexture2D("image", &texture);
+
+  // Init Sprite
+  PixelSprite sprite;
 
   // initialize imGUI
   ImGui::CreateContext();
@@ -141,7 +166,19 @@ int32_t main(int32_t argc, char*argv[])
 
     // do work
 
-    DrawPrimitive(shader_program);
+    SetupShaderParams(shader_program);
+
+    static float location_time = 0.0f;
+    sprite.SetPosition({100.0f * std::cos(location_time), 100.0f * std::sin(location_time)});
+    location_time += 0.05f;
+
+    auto model_matrix = glm::mat4(1.0f);
+    model_matrix = glm::translate(model_matrix, sprite.GetPosition());
+    model_matrix = glm::rotate(model_matrix, glm::radians(location_time * -100.0f), {0.0f, 0.0f, 1.0f});
+    model_matrix = glm::scale(model_matrix, {100.0f, 100.0f, 1.0f});
+    shader_program.SetFloat4x4("model", glm::value_ptr(model_matrix));
+
+    sprite.Draw();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     graphics_window.SwapBuffers();
@@ -159,36 +196,17 @@ int32_t main(int32_t argc, char*argv[])
   return 0;
 }
 
-void DrawPrimitive(ShaderProgram & shader_programs)
+void SetupShaderParams(ShaderProgram & shader_program)
 {
-
-  constexpr float r =  1.0f * (800.0f / 600.0f);
-  constexpr float l = -1.0f * (800.0f / 600.0f);
-  constexpr float t =  1.0f * (800.0f / 600.0f);
-  constexpr float b = -1.0f * (800.0f / 600.0f);
-  constexpr float f =  100.0f;
-  constexpr float n =  0.1f;
+  constexpr float l = -400;
+  constexpr float r =  400;
+  constexpr float b =  300;
+  constexpr float t = -300;
+  constexpr float n = -1.0f;
+  constexpr float f =  1.0f;
 
   auto ortho_matrix = glm::ortho(l, r, b, t, n, f);
-
-  static float vertices[] = {
-      // positions        // colors
-      0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-     -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-      0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top
-  };
-
-  static GLuint vao_handle = 0;
-  glGenVertexArrays(1, &vao_handle);
-  glBindVertexArray(vao_handle);
-
-  static GLuint vbo_handle = 0;
-  glGenBuffers(1, &vbo_handle);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo_handle);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
-  glEnableVertexAttribArray(0);
-
+  shader_program.SetFloat4x4("ortho", glm::value_ptr(ortho_matrix));
 
   static float timeValue = 0.01f;
   timeValue += 0.05f;
@@ -196,15 +214,10 @@ void DrawPrimitive(ShaderProgram & shader_programs)
   float green_value = std::sin(timeValue) / 2.0f + 0.5f;
   float red_value = std::cos(timeValue) / 2.0f + 0.5f;
   float blue_value = std::sin(timeValue) / 3.0f + 0.5f;
-  int vertexColorLocation = glGetUniformLocation(shader_programs.GetProgramId(), "color");
-  glUniform4f(vertexColorLocation, red_value, green_value, blue_value, 1.0f);
-
-  int orthoMatLocation = glGetUniformLocation(shader_programs.GetProgramId(), "ortho_mat");
-  glUniformMatrix4fv(orthoMatLocation, 1, GL_TRUE, &ortho_matrix[0][0]);
-
-  // now render the triangle
-  glDrawArrays(GL_TRIANGLES, 0, 3);
+  float color[] = {red_value, green_value, blue_value};
+  shader_program.SetFloat4("color", color);
 }
+
 
 int32_t WindowResize(void * data, SDL_Event * event)
 {
@@ -218,4 +231,18 @@ int32_t WindowResize(void * data, SDL_Event * event)
   }
 
   return 0;
+}
+
+void SetConsoleMode()
+{
+  #ifdef _WIN32
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (handle != INVALID_HANDLE_VALUE) {
+      DWORD mode = 0;
+      if (GetConsoleMode(handle, &mode)) {
+        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        SetConsoleMode(handle, mode);
+      }
+    }
+  #endif
 }
