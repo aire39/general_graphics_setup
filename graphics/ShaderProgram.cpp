@@ -5,6 +5,8 @@
 
 #include <magic_enum.hpp>
 
+#include "Texture2D.h"
+
 ShaderProgram::ShaderProgram()
 {
   handle = glCreateProgram();
@@ -120,6 +122,11 @@ void ShaderProgram::SetFloat4(const std::string &name, float* value) const
 void ShaderProgram::SetFloat4x4(const std::string &name, float* value, bool transpose) const
 {
   glUniformMatrix4fv(glGetUniformLocation(handle, name.c_str()), 1, transpose, value);
+}
+
+void ShaderProgram::SetTexture2D(const std::string &name, const Texture2D* texture) const
+{
+  glUniform1ui(glGetUniformLocation(handle, name.c_str()), texture->GetActiveTextureUnit());
 }
 
 void ShaderProgram::DetachShaders(const OGLShader & shader) const
