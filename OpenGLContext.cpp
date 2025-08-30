@@ -15,7 +15,7 @@ OpenGLContext::OpenGLContext(GraphicsWindow & graphics_window)
 
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, SDL_TRUE);
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
 
   context = SDL_GL_CreateContext(graphics_window.GetSDLWindow());
 }

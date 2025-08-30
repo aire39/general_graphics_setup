@@ -16,16 +16,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <CLI/App.hpp>
-#include <CLI/Formatter.hpp>
-#include <CLI/Config.hpp>
+#include <CLI/CLI.hpp>
 
 #include "GraphicsWindow.h"
 #include "graphics/OGLShader.h"
 #include "graphics/ShaderProgram.h"
 
-void DrawPrimitive(ShaderProgram & shader_program);
-int32_t WindowResize(void * data, SDL_Event * event);
+void DrawPrimitive(const ShaderProgram & shader_program);
+bool WindowResize(void * data, SDL_Event * event);
 
 int32_t main(int32_t argc, char*argv[])
 {
@@ -159,7 +157,7 @@ int32_t main(int32_t argc, char*argv[])
   return 0;
 }
 
-void DrawPrimitive(ShaderProgram & shader_programs)
+void DrawPrimitive(const ShaderProgram & shader_programs)
 {
 
   constexpr float r =  1.0f * (800.0f / 600.0f);
@@ -206,16 +204,19 @@ void DrawPrimitive(ShaderProgram & shader_programs)
   glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-int32_t WindowResize(void * data, SDL_Event * event)
+bool WindowResize(void * data, SDL_Event * event)
 {
+  bool event_handled = false;
+
   if (event->window.type == SDL_EVENT_WINDOW_RESIZED)
   {
     SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
     if (window == static_cast<SDL_Window*>(data))
     {
       spdlog::info("window resizing...");
+      event_handled = true;
     }
   }
 
-  return 0;
+  return event_handled;
 }
