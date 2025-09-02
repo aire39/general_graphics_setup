@@ -3,8 +3,8 @@
 #include <cstdint>
 
 namespace {
-  constexpr int64_t check_for_job_wait_time_ms = 100;
-  constexpr int64_t wait_time_ms = 100;
+  constexpr uint32_t check_for_job_wait_time_ms = 100;
+  constexpr uint32_t wait_time_ms = 100;
   constexpr auto default_thread_name = "tp";
 }
 
@@ -55,7 +55,7 @@ void cthreadpool::waitforthread()
 {
   std::unique_lock lock_check (checkmutex);
   const auto wait_time = std::chrono::milliseconds(wait_time_ms);
-  auto predicate = [this] -> bool {
+  auto predicate = [this]() -> bool {
     return !queuedJobs.empty();
   };
 

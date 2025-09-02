@@ -10,12 +10,13 @@
 #include "Texture2D.h"
 
 class Texture2D;
-class SDL_Surface;
+struct SDL_Surface;
 
 class Sprite
 {
   public:
     Sprite();
+    explicit Sprite(const std::string& new_name);
     virtual ~Sprite();
 
     [[maybe_unused]] void SetPosition(glm::vec2 pos);
@@ -32,11 +33,22 @@ class Sprite
 
     [[nodiscard]] const Texture2D *GetTexture() const;
 
+    virtual int32_t GetWidth() const;
+    virtual int32_t GetHeight() const;
+    virtual int32_t GetBytesPerPixel() const;
+
     virtual void Draw();
+
+    void SetName(const std::string& new_name);
+    [[nodiscard]] std::string GetName() const;
+    [[nodiscard]] uint32_t GetID() const;
+    static uint32_t TotalNumber();
 
   protected:
     std::vector<primitive::Vertex> vertices;
     std::vector<GLuint> indices;
+    std::string name;
+    uint32_t id = 0;
     glm::fvec3 position {0.0f, 0.0f, 0.0f};
     float rotation {0.0f};
     glm::fvec2 scale {1.0f, 1.0f};
@@ -45,6 +57,9 @@ class Sprite
     GLuint iboHandle = 0;
 
     Texture2D texture;
+
+    static inline uint32_t refCount = 0;
+    static inline uint32_t refCountId = 0;
 
   private:
     void Init();

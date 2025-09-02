@@ -11,7 +11,6 @@
 #include <imgui/backends/imgui_impl_sdl3.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 #include <SDL3/SDL.h>
-#include <SDL3_image/SDL_image.h>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bundled/color.h>
@@ -25,10 +24,14 @@
 #include "GraphicsWindow.h"
 #include "graphics/OGLShader.h"
 #include "graphics/ShaderProgram.h"
-#include "graphics/EnhanceSprite.h"
+#include "graphics/FImage.h"
 
 #include "graphics/PrebuiltShaderSources.h"
 #include "graphics/Filters.h"
+
+#define TEST_FILTER_CB false
+#define TEST_SAVE_FILTER true
+#define TEST_MANUAL_FILTER false
 
 void SetupShaderParams(const ShaderProgram & shader_program);
 bool WindowResize(void * data, SDL_Event * event);
@@ -71,12 +74,106 @@ int32_t main(int32_t argc, char*argv[])
   shader_program.Use();
 
   // Init Sprite with Texture
-  EnhanceSprite sprite;
+  FImage sprite;
+  //EnhanceSprite sprite("test", 1280, 960, SDL_PIXELFORMAT_RGB24);
   sprite.LoadTexture("../images/park.jpg");
   shader_program.SetTexture2D("image", sprite.GetTexture());
 
   // Apply gray scale filter on image
-  sprite.ProcessFilter(filter::functions::convert_to_grayscale, false);
+
+  #if TEST_FILTER_CB
+  constexpr bool save_filter = false;
+  constexpr bool is_parallel_process = true;
+  std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+  sprite.ProcessFilter(filter::functions::convert_to_grayscale, save_filter, is_parallel_process);
+  std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+
+  double elapsed_time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000.0;
+  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "{}({}) Filter process (par_unseq) elapsed time: {}ms", sprite.GetName(), sprite.GetID(), elapsed_time));
+  #endif
+
+  #if TEST_SAVE_FILTER
+  constexpr bool save_filter = true;
+  std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+  sprite.ProcessFilter(filter::functions::cpu::parallel_vectorize::convert_to_grayscale, save_filter);
+  sprite.ProcessFilter(filter::functions::cpu::parallel_vectorize::convert_to_grayscale, save_filter);
+
+  sprite.ViewTexture(1);
+  sprite.ProcessFilter(filter::functions::cpu::parallel_vectorize::convert_to_grayscale, save_filter);
+
+  sprite.ViewTexture(1);
+  sprite.ProcessFilter(filter::functions::cpu::parallel_vectorize::convert_to_grayscale, save_filter);
+
+  sprite.ViewTexture(2);
+  sprite.ProcessFilter(filter::functions::cpu::parallel_vectorize::convert_to_grayscale, save_filter);
+
+  sprite.ChangeFilterName("3", "change");
+
+  sprite.ChangeFilterName(4, "change");
+  sprite.ChangeFilterName("change", "change");
+
+  std::vector<std::pair<std::string, int>> processed_image_names_0 = sprite.GetProcessedImageNames();
+  std::string name_list_0;
+  for (const auto & [name, index] : processed_image_names_0 )
+  {
+    name_list_0 += "[" + name + " (" + std::to_string(index) + ")] ";
+  }
+  spdlog::info("processed_image_names image names: {}", name_list_0);
+
+  sprite.ProcessFilter("change", "test", filter::functions::cpu::vectorize::convert_to_grayscale);
+
+  std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+
+  double elapsed_time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000.0;
+  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "{}({}) Filter process (par_unseq) elapsed time: {}ms", sprite.GetName(), sprite.GetID(), elapsed_time));
+
+  std::vector<std::pair<std::string, int>> processed_image_names = sprite.GetProcessedImageNames();
+  std::string name_list;
+  for (const auto & [name, index] : processed_image_names )
+  {
+    name_list += "[" + name + " (" + std::to_string(index) + ")] ";
+  }
+  spdlog::info("processed_image_names image names: {} --> current view: {}", name_list, sprite.GetCurrentImageFilterID());
+
+  const auto image = sprite.Extract(5);
+  SDL_DestroySurface(image);
+
+  processed_image_names = sprite.GetProcessedImageNames();
+  name_list = "";
+  for (const auto & [name, index] : processed_image_names )
+  {
+    name_list += "[" + name + " (" + std::to_string(index) + ")] ";
+  }
+  spdlog::info("processed_image_names image names: {}", name_list);
+
+  #endif
+
+  #if TEST_MANUAL_FILTER
+  const int tex_width  = sprite.GetTexture()->GetWidth();
+  const int tex_height = sprite.GetTexture()->GetHeight();
+
+  start = std::chrono::high_resolution_clock::now();
+  for (int y = 0; y < tex_height; y++)
+  {
+    for (int x = 0; x < tex_width; x++)
+    {
+      auto pixel = sprite.GetPixel(x, y);
+
+      const auto value = static_cast<uint8_t>((static_cast<int>(pixel.r) + static_cast<int>(pixel.g) + static_cast<int>(pixel.b)) / 3);
+      pixel.r = value;
+      pixel.g = value;
+      pixel.b = value;
+
+      sprite.SetPixel(x, y, pixel.r, pixel.g, pixel.b, pixel.a);
+    }
+  }
+  end = std::chrono::high_resolution_clock::now();
+
+  elapsed_time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000.0;
+  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "Manual filter process elapsed time: {}ms", elapsed_time));
+
+  sprite.ViewTexture(); // update after manually setting pixel data to see result
+  #endif
 
   // initialize imGUI
   ImGui::CreateContext();
@@ -119,15 +216,37 @@ int32_t main(int32_t argc, char*argv[])
 
     SetupShaderParams(shader_program);
 
-    static float location_time = 0.0f;
-    sprite.SetPosition({100.0f * std::cos(location_time), 100.0f * std::sin(location_time)});
+    static float location_time = 1.0f;
+    static bool switch_layer = false;
+    //sprite.SetPosition({100.0f * std::cos(location_time), 100.0f * std::sin(location_time)});
     location_time += 0.05f;
+    //spdlog::info("time: {}", location_time);
 
     auto model_matrix = glm::mat4(1.0f);
     model_matrix = glm::translate(model_matrix, sprite.GetPosition());
-    model_matrix = glm::rotate(model_matrix, glm::radians(location_time * -100.0f), {0.0f, 0.0f, 1.0f});
-    model_matrix = glm::scale(model_matrix, {100.0f, 100.0f, 1.0f});
+    //model_matrix = glm::rotate(model_matrix, glm::radians(location_time * -100.0f), {0.0f, 0.0f, 1.0f});
+    model_matrix = glm::scale(model_matrix, {800.0f, 600.0f, 1.0f});
     shader_program.SetFloat4x4("model", glm::value_ptr(model_matrix));
+
+    #if TEST_SAVE_FILTER
+    if (static_cast<int32_t>(location_time) % 10 == 0)
+    {
+      location_time = 1.0f;
+
+      if (!switch_layer)
+      {
+        sprite.ViewTexture(sprite.GetBaseImageFilterID());
+        spdlog::info("switch to base layer!");
+      }
+      else
+      {
+        sprite.ViewTexture(sprite.GetFinalImageFilterID());
+        spdlog::info("switch to other layer!");
+      }
+
+      switch_layer ^= true;
+    }
+    #endif
 
     sprite.Draw();
 
