@@ -6,9 +6,9 @@ set(CMAKE_CXX_STANDARD 23)
 
 ## get nasm assembler for windows
 
-set(NASM_VERSION ON CACHE STRING "2.16.03")
-set(NASM_HASH_SHA512 ON CACHE STRING "22869ceb70ea0e6597fe06abe205b5d5dd66b41fe54dda73d338c488ba6ef13a39158f25b357616bf578752bb112869ef26ad897eb29352e85cf1ecc61a7c07a")
-if (CMAKE_HOST_WIN32)
+set(NASM_VERSION "2.16.03" CACHE STRING "NASM version")
+set(NASM_HASH_SHA512 "22869CEB70EA0E6597FE06ABE205B5D5DD66B41FE54DDA73D338C488BA6EF13A39158F25B357616BF578752BB112869EF26AD897EB29352E85CF1ECC61A7C07A" CACHE STRING "SHA512 string for NASM")
+if (WIN32)
   include(FetchContent)
   message("-- Fetch NASM Assembler")
   if (EXISTS ${PROJECT_SOURCE_DIR}/nasm)
@@ -59,8 +59,13 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/libs/magic_enum)
 include_directories(${PROJECT_SOURCE_DIR}/libs/gui)
 include_directories(${PROJECT_SOURCE_DIR}/libs/gui/imgui)
 file(GLOB IMGUI_SRC ${PROJECT_SOURCE_DIR}/libs/gui/imgui/*.cpp)
-file(GLOB IMGUI_SRC_OGLSUPPORT ${PROJECT_SOURCE_DIR}/libs/gui/imgui/backends/imgui_impl_opengl3*)
-file(GLOB IMGUI_SRC_SDLSUPPORT ${PROJECT_SOURCE_DIR}/libs/gui/imgui/backends/imgui_impl_sdl3*)
+file(GLOB IMGUI_SRC_BACKEND ${PROJECT_SOURCE_DIR}/libs/gui/imgui/backends/imgui_impl_opengl3* ${PROJECT_SOURCE_DIR}/libs/gui/imgui/backends/imgui_impl_sdl3*)
+
+add_library(imgui STATIC ${IMGUI_SRC})
+add_library(imgui_backend STATIC ${IMGUI_SRC_BACKEND})
+
+target_include_directories(imgui PRIVATE libs/gui/imgui libs/gui/imgui)
+target_include_directories(imgui_backend PRIVATE libs/gui/imgui libs/gui/imgui libs/gui/imgui/backends libs/sdl/include)
 
 ## Add SPD Log
 
@@ -83,30 +88,37 @@ find_package(OpenGL REQUIRED)
 
 ## custom thread code
 
+set(MAX_ENHANCE_SPRITE_THREADS 8 CACHE STRING "Set maximum number of threads for EnhanceSprite threadpool")
+add_definitions(-DMAX_ENHANCE_SPRITE_THREADS=${MAX_ENHANCE_SPRITE_THREADS})
+
 file(GLOB CTHREADS_SRC ${PROJECT_SOURCE_DIR}/common/cthreads/*)
 add_library(cthreads STATIC ${CTHREADS_SRC})
 target_include_directories(cthreads PUBLIC ${PROJECT_SOURCE_DIR}/common)
+
+## Add TBB to enable parallel execution
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+else()
+  find_package(TBB REQUIRED)
+endif ()
 
 ## Link and Executable Configuration
 
 file(GLOB GRAPHICS_FILES graphics/*)
 
 add_executable(${PROJECT_NAME}
-               ${IMGUI_SRC}
-               ${IMGUI_SRC_OGLSUPPORT}
-               ${IMGUI_SRC_SDLSUPPORT}
                ${GRAPHICS_FILES}
                ${GLAD_SOURCES}
                GraphicsWindow.h
                GraphicsWindow.cpp
                OpenGLContext.h
                OpenGLContext.cpp
-               graphics/EnhanceSprite.cpp
-               graphics/EnhanceSprite.h
+               graphics/FImage.cpp
+               graphics/FImage.h
                graphics/PrebuiltShaderSources.h
-               utils/Utils.h
                graphics/Filters.h
+               graphics/Filters.cpp
                graphics/PixelData.h
+               common/support/utility.h
                main.cpp)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -121,6 +133,17 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
                       cthreads)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+                      imgui
+                      imgui_backend
+                      cthreads)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+else()
+  target_link_libraries(${PROJECT_NAME} PUBLIC
+                        TBB::tbb)
+endif ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>
@@ -138,10 +161,11 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 ## Compiler Options
 
-if (MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:/W4 /WX /Od>)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:/W4 /WX /Ot /O2>)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:/W4 /WX /arch:AVX2 /Od>)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:/W4 /WX /arch:AVX2 /Ot /O2>)
 else ()
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wunused -Werror -O0 -g>)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:-Wall -Wextra -Wpedantic -Wunused -Werror -O3>)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O0 -g>)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O3>)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELWITHDEBINFO>:-ggdb -Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O3>)
 endif ()

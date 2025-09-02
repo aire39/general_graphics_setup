@@ -20,6 +20,7 @@ class Texture2D
     [[nodiscard]] uint32_t GetHandle() const;
     [[nodiscard]] int32_t GetWidth() const;
     [[nodiscard]] int32_t GetHeight() const;
+    [[nodiscard]] int32_t GetBytesPerPixel() const;
 
   private:
     uint32_t handle = 0;

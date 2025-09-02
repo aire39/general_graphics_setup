@@ -13,6 +13,10 @@ Sprite::Sprite()
  : vertices(num_sprite_vertices)
  , indices(num_sprite_indices)
 {
+  name = "Sprite";
+  Sprite::id++;
+  id = refCountId++;
+
   glGenVertexArrays(1, &vaoHandle);
   glGenBuffers(1, &vboHandle);
   glGenBuffers(1, &iboHandle);
@@ -21,8 +25,15 @@ Sprite::Sprite()
   Update();
 }
 
+Sprite::Sprite(const std::string& new_name)
+  : Sprite()
+{
+  SetName(new_name);
+}
+
 Sprite::~Sprite()
 {
+  Sprite::id--;
   glDeleteBuffers(1, &iboHandle);
   glDeleteBuffers(1, &vboHandle);
   glDeleteVertexArrays(1, &vaoHandle);
@@ -91,6 +102,21 @@ const Texture2D *Sprite::GetTexture() const
   return &texture;
 }
 
+int32_t Sprite::GetWidth() const
+{
+  return texture.GetWidth();
+}
+
+int32_t Sprite::GetHeight() const
+{
+  return texture.GetHeight();
+}
+
+int32_t Sprite::GetBytesPerPixel() const
+{
+  return texture.GetBytesPerPixel();
+}
+
 void Sprite::Draw()
 {
   glBindVertexArray(vaoHandle);
@@ -98,6 +124,26 @@ void Sprite::Draw()
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboHandle);
 
   glDrawElements(GL_TRIANGLE_STRIP, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, nullptr);
+}
+
+void Sprite::SetName(const std::string &new_name)
+{
+  name = new_name;
+}
+
+std::string Sprite::GetName() const
+{
+  return name;
+}
+
+uint32_t Sprite::GetID() const
+{
+  return id;
+}
+
+uint32_t Sprite::TotalNumber()
+{
+  return refCount;
 }
 
 void Sprite::Init()

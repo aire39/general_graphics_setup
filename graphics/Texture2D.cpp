@@ -21,7 +21,7 @@ void Texture2D::Use() const
 void Texture2D::SetActiveUnit(uint32_t active_texture_unit)
 {
   activeTexture = active_texture_unit;
-  //glActiveTexture(GL_TEXTURE0 + active_texture_unit);
+  glActiveTexture(GL_TEXTURE0 + active_texture_unit);
   glBindTexture(GL_TEXTURE_2D, GetHandle());
 }
 
@@ -102,4 +102,20 @@ int32_t Texture2D::GetWidth() const
 int32_t Texture2D::GetHeight() const
 {
   return height;
+}
+
+int32_t Texture2D::GetBytesPerPixel() const
+{
+  int32_t bytes_per_pixel = 1;
+
+  if (dataFormat == GL_RGB)
+  {
+    bytes_per_pixel = 3;
+  }
+  else if (dataFormat == GL_RGBA)
+  {
+    bytes_per_pixel = 4;
+  }
+
+  return bytes_per_pixel;
 }
