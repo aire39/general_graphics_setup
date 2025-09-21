@@ -5,6 +5,8 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bundled/color.h>
 
+#include "SDL3/SDL_opengl.h"
+
 namespace {
   constexpr int32_t default_ogl_version_major {4};
   constexpr int32_t default_ogl_version_minor {5};
@@ -39,4 +41,14 @@ OpenGLContext::~OpenGLContext()
 SDL_GLContext OpenGLContext::GetContext() const
 {
   return context;
+}
+
+void OpenGLContext::Flush()
+{
+  glFlush();
+}
+
+void OpenGLContext::Finish()
+{
+  glFinish();
 }
