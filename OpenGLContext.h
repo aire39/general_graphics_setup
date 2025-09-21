@@ -15,6 +15,9 @@ class OpenGLContext
 
     [[nodiscard]] SDL_GLContext GetContext() const;
 
+    static void Flush();
+    static void Finish();
+
   private:
     SDL_GLContext context = nullptr;
 };

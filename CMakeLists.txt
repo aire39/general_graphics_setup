@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.25)
-project (graphics VERSION 0.1.0)
+project (graphics VERSION 0.2.0)
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 23)
+
+## define project root directory to make it easier to define file locations in code related to project
+
+add_definitions(-DPROJECT_ROOT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/")
 
 ## get nasm assembler for windows
 
@@ -105,6 +109,37 @@ endif ()
 
 file(GLOB GRAPHICS_FILES graphics/*)
 
+# setup examples
+
+option(BUILD_ALL_EXAMPLES "Build All Examples" OFF)
+option(BUILD_EXAMPLE_FIMAGE_GRAYSCALE "Build Grayscale Image Filtering Example" OFF)
+option(BUILD_EXAMPLE_FIMAGE_BLUR "Build Blur Image Filtering Example" OFF)
+option(BUILD_EXAMPLE_FIMAGE_VARYBITS "Build Varying Bits Image Filtering Example" OFF)
+option(BUILD_EXAMPLE_FIMAGE_MANFILT "Build Manual Filtering Example" OFF)
+
+if (BUILD_EXAMPLE_FIMAGE_GRAYSCALE OR BUILD_ALL_EXAMPLES)
+    message("Build Grayscale Example...")
+    add_subdirectory(examples/filtered-images/grayscale)
+endif ()
+
+if (BUILD_EXAMPLE_FIMAGE_BLUR OR BUILD_ALL_EXAMPLES)
+    message("Build Blur Example...")
+    add_subdirectory(examples/filtered-images/blur)
+endif ()
+
+if (BUILD_EXAMPLE_FIMAGE_VARYBITS OR BUILD_ALL_EXAMPLES)
+    message("Build Varying Bits Example...")
+    add_subdirectory(examples/filtered-images/varyingbits)
+endif ()
+
+if (BUILD_EXAMPLE_FIMAGE_MANFILT OR BUILD_ALL_EXAMPLES)
+    message("Build Manual Filtering Example...")
+    add_subdirectory(examples/filtered-images/manual-filter)
+endif ()
+
+
+# setup application
+
 add_executable(${PROJECT_NAME}
                ${GRAPHICS_FILES}
                ${GLAD_SOURCES}
@@ -121,7 +156,32 @@ add_executable(${PROJECT_NAME}
                common/support/utility.h
                main.cpp)
 
+add_library(${PROJECT_NAME}-static STATIC
+            ${GRAPHICS_FILES}
+            ${GLAD_SOURCES}
+            GraphicsWindow.h
+            GraphicsWindow.cpp
+            OpenGLContext.h
+            OpenGLContext.cpp
+            graphics/FImage.cpp
+            graphics/FImage.h
+            graphics/PrebuiltShaderSources.h
+            graphics/Filters.h
+            graphics/Filters.cpp
+            graphics/PixelData.h
+            common/support/utility.h)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
+                      SDL3::SDL3-static
+                      SDL3_image::SDL3_image
+                      ${OPENGL_LIBRARIES}
+                      glad
+                      spdlog::spdlog
+                      magic_enum::magic_enum
+                      glm::glm
+                      CLI11::CLI11)
+
+target_link_libraries(${PROJECT_NAME}-static PUBLIC
                       SDL3::SDL3-static
                       SDL3_image::SDL3_image
                       ${OPENGL_LIBRARIES}
@@ -139,13 +199,31 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                       imgui_backend
                       cthreads)
 
+target_link_libraries(${PROJECT_NAME}-static PRIVATE
+                      imgui
+                      imgui_backend
+                      cthreads)
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else()
   target_link_libraries(${PROJECT_NAME} PUBLIC
                         TBB::tbb)
+
+  target_link_libraries(${PROJECT_NAME}-static PUBLIC
+          TBB::tbb)
 endif ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
+                           $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>
+                           $<TARGET_PROPERTY:SDL3_image::SDL3_image,INTERFACE_INCLUDE_DIRECTORIES>
+                           $<TARGET_PROPERTY:glad,INTERFACE_INCLUDE_DIRECTORIES
+                           $<TARGET_PROPERTY:magic_enum::magic_enum,INTERFACE_INCLUDE_DIRECTORIES
+                           $<TARGET_PROPERTY:glm::glm,INTERFACE_INCLUDE_DIRECTORIES
+                           $<TARGET_PROPERTY:CLI11::CLI11,INTERFACE_INCLUDE_DIRECTORIES
+                           $<TARGET_PROPERTY:cthreads::cthreads,INTERFACE_INCLUDE_DIRECTORIES)
+
+target_include_directories(${PROJECT_NAME}-static PUBLIC
+                           ${CMAKE_CURRENT_SOURCE_DIR}
                            $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>
                            $<TARGET_PROPERTY:SDL3_image::SDL3_image,INTERFACE_INCLUDE_DIRECTORIES>
                            $<TARGET_PROPERTY:glad,INTERFACE_INCLUDE_DIRECTORIES
@@ -165,6 +243,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:/W4 /WX /arch:AVX2 /Od>)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:/W4 /WX /arch:AVX2 /Ot /O2>)
 else ()
+    target_compile_options(${PROJECT_NAME}-static PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O0 -g>)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O0 -g>)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O3>)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELWITHDEBINFO>:-ggdb -Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O3>)

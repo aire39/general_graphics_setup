@@ -19,7 +19,6 @@
 #include <condition_variable>
 #include <mutex>
 #include <memory>
-#include <atomic>
 #include <glm/glm.hpp>
 #include <SDL3/SDL_pixels.h>
 
@@ -58,6 +57,7 @@ class FImage final : public Sprite
     [[nodiscard]] uint8_t GetBluePixel(int32_t x, int32_t y) const;
     [[nodiscard]] uint8_t GetBluePixel(int32_t image_id, int32_t x, int32_t y) const;
     [[nodiscard]] uint8_t GetAlphaPixel(int32_t x, int32_t y) const;
+    [[nodiscard]] SDL_Surface* GetImage(int32_t image_id) const;
 
     void ChangeFilterName(const std::string& filter_name, const std::string& new_filter_name);
     void ChangeFilterName(int32_t filter_id, const std::string& new_filter_name);
@@ -82,9 +82,9 @@ class FImage final : public Sprite
     void Remove();
     void Remove(int32_t image_id);
     void Remove(const std::string& image_name);
-    [[nodiscard]] SDL_Surface* Extract();
-    [[nodiscard]] SDL_Surface* Extract(int32_t image_id);
-    [[nodiscard]] SDL_Surface* Extract(const std::string& image_name);
+    [[nodiscard]] std::shared_ptr<SDL_Surface> Extract();
+    [[nodiscard]] std::shared_ptr<SDL_Surface> Extract(int32_t image_id);
+    [[nodiscard]] std::shared_ptr<SDL_Surface> Extract(const std::string& image_name);
 
     void ResetFilters();
 
@@ -92,11 +92,12 @@ class FImage final : public Sprite
 
   private:
     int32_t currentViewLayer = 0;
-    SDL_Surface* originalImage = nullptr;
-    SDL_Surface* tmpBuffer = nullptr;
+    using ImageDeleteFunc = std::function<void(SDL_Surface*)>;
+    std::shared_ptr<SDL_Surface> originalImage;
+    std::shared_ptr<SDL_Surface> tmpBuffer;
     bool hasViewChangedToInProcessFilter = false;
 
-    std::vector<SDL_Surface*> filteredImageData;
+    std::vector<std::shared_ptr<SDL_Surface>> filteredImageData;
     std::vector<filter::types::FilterType> filterProcessCalls;
     std::unordered_map<std::string, int32_t> filteredImageDataID;
     std::unordered_map<int32_t, int32_t> repeatFilteredImageMap;
@@ -126,6 +127,8 @@ class FImage final : public Sprite
     SDL_Surface* privRunFilter(const SDL_Surface* read_image, SDL_Surface* write_image, const filter::types::FilterType &filter, int32_t repeat_filter_n_times, const bool& in_progress);
 
     SDL_Surface* privSelectReadImage(const int32_t& image_id, const bool& save_filter) const;
+
+    static void privDeleteSurface(SDL_Surface* surface);
 
     static cthreadpool threadPool;
 };

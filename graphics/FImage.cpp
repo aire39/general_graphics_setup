@@ -14,7 +14,7 @@
 #include "Filters.h"
 
 FImage::FImage()
-  : Sprite("EnhanceSprite")
+  : Sprite("FImage")
 {
 }
 
@@ -26,53 +26,46 @@ FImage::FImage(const std::string& new_name)
 FImage::FImage(const std::string &new_name, const int32_t width, const int32_t height, const SDL_PixelFormat format)
   : Sprite(new_name)
 {
-    originalImage = SDL_CreateSurface(width, height, format);
+    originalImage = std::shared_ptr<SDL_Surface>(SDL_CreateSurface(width, height, format), &FImage::privDeleteSurface);
 
-    filteredImageData.emplace_back(SDL_ConvertSurface(originalImage, originalImage->format));
+    filteredImageData.emplace_back(std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(originalImage.get(), originalImage->format), &FImage::privDeleteSurface));
     filteredImageDataID.insert({"base", 0});
 
     filterProcessCalls.emplace_back(filter::functions::cpu::parallel_vectorize::default_filter_process);
-    Sprite::LoadTexture(filteredImageData[0]);
+    Sprite::LoadTexture(filteredImageData[0].get());
 }
 
 FImage::~FImage()
 {
-    if (originalImage != filteredImageData[0])
-    {
-        SDL_DestroySurface(originalImage);
-    }
-
     ResetSprite();
-
-    delete[] tmpBuffer;
 }
 
 void FImage::LoadTexture(const std::string &image_file)
 {
     if (!originalImage)
     {
-        SDL_DestroySurface(originalImage);
+        originalImage.reset();
         ResetSprite();
     }
 
-    originalImage = IMG_Load(image_file.c_str());
-    filteredImageData.emplace_back(SDL_ConvertSurface(originalImage, originalImage->format));
+    originalImage = std::shared_ptr<SDL_Surface>(IMG_Load(image_file.c_str()), &FImage::privDeleteSurface);
+    filteredImageData.emplace_back(SDL_ConvertSurface(originalImage.get(), originalImage->format), &FImage::privDeleteSurface);
     filteredImageDataID.insert({"base", 0});
 
     filterProcessCalls.emplace_back(filter::functions::cpu::parallel_vectorize::default_filter_process);
-    Sprite::LoadTexture(filteredImageData[0]);
+    Sprite::LoadTexture(filteredImageData[0].get());
 }
 
 void FImage::LoadTexture(const SDL_Surface *image)
 {
     if (!originalImage)
     {
-        SDL_DestroySurface(originalImage);
+        originalImage.reset();
         ResetSprite();
     }
 
-    originalImage = SDL_ConvertSurface(const_cast<SDL_Surface*>(image), image->format);
-    filteredImageData.emplace_back(SDL_ConvertSurface(originalImage, originalImage->format));
+    originalImage = std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(const_cast<SDL_Surface*>(image), image->format), &FImage::privDeleteSurface);
+    filteredImageData.emplace_back(SDL_ConvertSurface(originalImage.get(), originalImage->format), &FImage::privDeleteSurface);
     filteredImageDataID.insert({"base", 0});
 
     filterProcessCalls.emplace_back(filter::functions::cpu::parallel_vectorize::default_filter_process);
@@ -216,6 +209,22 @@ uint8_t FImage::GetAlphaPixel(const int32_t x, const int32_t y) const
     return pixel.a;
 }
 
+SDL_Surface * FImage::GetImage(const int32_t image_id) const
+{
+    SDL_Surface* image = nullptr;
+
+    if (!filteredImageData.empty() && image_id >= 0 && image_id < static_cast<glm::int32>(filteredImageData.size()) && filteredImageData[image_id])
+    {
+        image = filteredImageData[image_id].get();
+    }
+    else
+    {
+        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "image data does not exists: out of bounds!"));
+    }
+
+    return image;
+}
+
 void FImage::ChangeFilterName(const std::string &filter_name, const std::string &new_filter_name)
 {
     std::lock_guard lock(mutex);
@@ -285,7 +294,7 @@ void FImage::ViewTexture(const int32_t filter_id)
     std::lock_guard viewtex_lock(updateTextureMutex);
     if (!filteredImageData.empty() && filter_id >= 0 && filter_id < static_cast<int32_t>(filteredImageData.size()))
     {
-        const SDL_Surface* image = filteredImageData[filter_id];
+        const SDL_Surface* image = filteredImageData[filter_id].get();
         texture.Update(static_cast<uint8_t*>(image->pixels), image->w, image->h);
 
         currentViewLayer = filter_id;
@@ -304,7 +313,7 @@ void FImage::ViewTexture(const std::string& filter_name)
         std::string filter_name_lower = filter_name;
         std::ranges::transform(filter_name_lower, filter_name_lower.begin(), [](const unsigned char ch) { return std::tolower(ch); });
         const int32_t filter_id = filteredImageDataID.at(filter_name_lower);
-        const SDL_Surface* image = filteredImageData[filter_id];
+        const SDL_Surface* image = filteredImageData[filter_id].get();
         texture.Update(static_cast<uint8_t*>(image->pixels), image->w, image->h);
 
         currentViewLayer = filter_id;
@@ -399,7 +408,7 @@ void FImage::Remove(const int32_t image_id)
             cvWaitForThreadToComplete.wait(reapplyFilterLock, [this]{ return isProgressThreadComplete; });
         }
 
-        SDL_DestroySurface(filteredImageData[image_id]);
+        filteredImageData[image_id].reset();
         filteredImageData.erase(filteredImageData.begin() + image_id);
         filterProcessCalls.erase(filterProcessCalls.begin() + image_id);
 
@@ -430,14 +439,14 @@ void FImage::Remove(const std::string& image_name)
     }
 }
 
-SDL_Surface* FImage::Extract()
+std::shared_ptr<SDL_Surface> FImage::Extract()
 {
     return Extract(currentViewLayer);
 }
 
-SDL_Surface* FImage::Extract(const int32_t image_id)
+std::shared_ptr<SDL_Surface> FImage::Extract(const int32_t image_id)
 {
-    SDL_Surface* extracted_image = nullptr;
+    std::shared_ptr<SDL_Surface> extracted_image = nullptr;
 
     if (image_id > 0 && image_id < static_cast<int32_t>(filteredImageData.size()))
     {
@@ -448,9 +457,9 @@ SDL_Surface* FImage::Extract(const int32_t image_id)
     return extracted_image;
 }
 
-SDL_Surface* FImage::Extract(const std::string& image_name)
+std::shared_ptr<SDL_Surface> FImage::Extract(const std::string& image_name)
 {
-    SDL_Surface* extracted_image = nullptr;
+    std::shared_ptr<SDL_Surface> extracted_image = nullptr;
 
     try
     {
@@ -469,15 +478,15 @@ void FImage::ResetFilters()
 {
     std::lock_guard lock(mutex);
 
-    for (const auto image : filteredImageData)
+    for (auto image : filteredImageData)
     {
-        SDL_DestroySurface(image);
+        image.reset();
     }
 
     currentViewLayer = 0;
 
     filteredImageData.clear();
-    filteredImageData.emplace_back(SDL_ConvertSurface(originalImage, originalImage->format));
+    filteredImageData.emplace_back(SDL_ConvertSurface(originalImage.get(), originalImage->format));
 
     filteredImageDataID.clear();
     filteredImageDataID.insert({"base", 0});
@@ -498,9 +507,9 @@ void FImage::Draw()
 
 void FImage::ResetSprite()
 {
-    for (const auto image : filteredImageData)
+    for (auto image : filteredImageData)
     {
-        SDL_DestroySurface(image);
+        image.reset();
     }
 
     currentViewLayer = 0;
@@ -611,6 +620,7 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
 
     const SDL_Surface* read_image = nullptr;
     const SDL_Surface* write_image = nullptr;
+    const int32_t prev_view_layer = currentViewLayer;
 
     if (save_filter)
     {
@@ -621,8 +631,8 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
 
         const auto image = filteredImageData[image_id];
 
-        SDL_Surface* copy = SDL_ConvertSurface(image, image->format);
-        filteredImageData.insert(filteredImageData.begin() + image_id + 1, copy);
+        SDL_Surface* copy = SDL_ConvertSurface(image.get(), image->format);
+        filteredImageData.insert(filteredImageData.begin() + image_id + 1, std::shared_ptr<SDL_Surface>(copy, &FImage::privDeleteSurface));
         write_image = copy;
 
         filteredImageDataID.insert({"", image_id + 1});
@@ -639,7 +649,7 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
         {
             std::thread([this]() {
                 std::lock_guard buf_lock(createBufferMutex);
-                tmpBuffer = SDL_ConvertSurface(originalImage, originalImage->format);
+                tmpBuffer = std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(originalImage.get(), originalImage->format), &FImage::privDeleteSurface);
             }).detach();
         }
 
@@ -673,9 +683,13 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
         if (image_id >= 0 && image_id < static_cast<int32_t>(filteredImageData.size()))
         {
             filterProcessCalls[image_id] = filter;
+            write_image = filteredImageData[image_id].get();
+            valid_image_id = image_id;
         }
-
-        write_image = filteredImageData[image_id];
+        else
+        {
+            spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Not a valid image id"));
+        }
     }
 
     read_image = privSelectReadImage(image_id, save_filter);
@@ -694,7 +708,7 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
         const int32_t reapply_filter_offset_count = shouldReapplyFilters ? static_cast<int32_t>(filteredImageData.size()) - (image_id + 1) : 1;
 
         const SDL_Surface* read_image_tmp = privSelectReadImage(image_id, save_filter);
-        SDL_Surface* write_image_tmp = save_filter ? filteredImageData[image_id + 1] : filteredImageData[image_id];
+        SDL_Surface* write_image_tmp = save_filter ? filteredImageData[image_id + 1].get() : filteredImageData[image_id].get();
         const auto use_filter = save_filter ? filterProcessCalls[image_id + 1] : filterProcessCalls[image_id];
 
         if (read_image_tmp)
@@ -716,11 +730,11 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
                     for (int32_t i=1; i < reapply_filter_offset_count; i++)
                     {
                         const SDL_Surface* tp_read_image_tmp = privSelectReadImage(image_id + i, save_filter);
-                        const SDL_Surface* tp_write_image_tmp = filteredImageData[image_id + i + 1];
+                        const SDL_Surface* tp_write_image_tmp = filteredImageData[image_id + i + 1].get();
                         auto tp_use_filter = filterProcessCalls[image_id + i + 1];
 
                         const int32_t reapply_thread_n_repeats = GetRepeatCount(image_id, save_filter);
-                        privRunFilter(tp_read_image_tmp, tmpBuffer, tp_use_filter, reapply_thread_n_repeats, inProgressOfUpdatingFilters);
+                        privRunFilter(tp_read_image_tmp, tmpBuffer.get(), tp_use_filter, reapply_thread_n_repeats, inProgressOfUpdatingFilters);
 
                         if (!inProgressOfUpdatingFilters)
                         {
@@ -749,7 +763,10 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
             spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "invalid image id filter"));
         }
 
-        texture.Update(static_cast<uint8_t*>(write_image->pixels), write_image->w, write_image->h);
+        if (prev_view_layer != currentViewLayer && save_filter)
+        {
+            texture.Update(static_cast<uint8_t*>(write_image->pixels), write_image->w, write_image->h);
+        }
     }
     else
     {
@@ -883,7 +900,7 @@ SDL_Surface * FImage::privRunFilter(const SDL_Surface *read_image, SDL_Surface *
                 const int32_t j = idx % read_image->w;
                 const int32_t i = idx / read_image->w;
 
-                const auto pixel_value = filter.first(image_data_pixels.front(), j, i, bytes_per_pixel, read_image->w, read_image->h, read_image->pitch);
+                const auto pixel_value = std::get<filter::types::FilterFuncType>(filter)(image_data_pixels.front(), j, i, bytes_per_pixel, read_image->w, read_image->h, read_image->pitch, std::get<filter::types::FilterUserTypes>(filter));
 
                 const auto image_write_byte_data = static_cast<uint8_t*>(write_image->pixels);
                 image_write_byte_data[(j * bytes_per_pixel) + (i * write_image->pitch) + 0] = std::get<0>(pixel_value);
@@ -895,7 +912,7 @@ SDL_Surface * FImage::privRunFilter(const SDL_Surface *read_image, SDL_Surface *
                     image_write_byte_data[(j * bytes_per_pixel) + (i * write_image->pitch) + 3] = std::get<3>(pixel_value);
                 }
             });
-        }, filter.second);
+        }, std::get<filter::types::ExecutionPolicies>(filter));
     }
 
     return write_image;
@@ -909,22 +926,27 @@ SDL_Surface* FImage::privSelectReadImage(const int32_t& image_id, const bool& sa
     {
         if (save_filter)
         {
-            read_image = filteredImageData[image_id];
+            read_image = filteredImageData[image_id].get();
         }
         else
         {
             if (image_id == 0)
             {
-                read_image = originalImage;
+                read_image = originalImage.get();
             }
             else
             {
-                read_image = filteredImageData[image_id-1];
+                read_image = filteredImageData[image_id-1].get();
             }
         }
     }
 
     return read_image;
+}
+
+void FImage::privDeleteSurface(SDL_Surface *surface)
+{
+    SDL_DestroySurface(surface);
 }
 
 cthreadpool FImage::threadPool = cthreadpool(MAX_ENHANCE_SPRITE_THREADS, "TP_EhnceSprt");

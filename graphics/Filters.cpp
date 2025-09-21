@@ -14,9 +14,9 @@ namespace {
 
         if (image_data && w && h && p && (bpp == 3))
         {
-            r = image_data[x + (y * p) + 0];
-            g = image_data[x + (y * p) + 1];
-            b = image_data[x + (y * p) + 2];
+            r = image_data[(x * bpp) + (y * p) + 0];
+            g = image_data[(x * bpp) + (y * p) + 1];
+            b = image_data[(x * bpp) + (y * p) + 2];
         }
 
         return {r, g, b, a};
@@ -137,103 +137,117 @@ namespace {
 
         return {r, g, b, a};
     }
+
+    filter::types::FilterUserTypes default_user_type = 0;
 }
 
 namespace filter::functions::cpu::parallel_vectorize {
-    types::FilterType default_filter_process = {
-        [](const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> {
+    filter::types::FilterType default_filter_process = {
+        [](const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> {
             return DefaultFilterProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::par_unseq
+        , default_user_type
     };
 
-    types::FilterType convert_to_grayscale = {
-        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
+    filter::types::FilterType convert_to_grayscale = {
+        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
         {
             return ConvertToGrayScaleProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::par_unseq
+        , default_user_type
     };
 
-    types::FilterType random_pixel_colors = {
-        []([[maybe_unused]] const uint8_t* image_data, [[maybe_unused]] const int32_t& x, [[maybe_unused]] const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, [[maybe_unused]] const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
+    filter::types::FilterType random_pixel_colors = {
+        []([[maybe_unused]] const uint8_t* image_data, [[maybe_unused]] const int32_t& x, [[maybe_unused]] const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, [[maybe_unused]] const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
         {
             return RandomPixelColorProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::par_unseq
+        , default_user_type
     };
 
-    types::FilterType gaussian_blur_3x3 = {
-        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
+    filter::types::FilterType gaussian_blur_3x3 = {
+        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
         {
             return GuassianBlue3x3KernelProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::par_unseq
+        , default_user_type
     };
 }
 
 namespace filter::functions::cpu::sequential {
-    types::FilterType default_filter_process = {
-        [](const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> {
+    filter::types::FilterType default_filter_process = {
+        [](const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> {
             return DefaultFilterProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::seq
+        , default_user_type
     };
 
-    types::FilterType convert_to_grayscale = {
-        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
+    filter::types::FilterType convert_to_grayscale = {
+        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
         {
             return ConvertToGrayScaleProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::seq
+        , default_user_type
     };
 
-    types::FilterType random_pixel_colors = {
-        []([[maybe_unused]] const uint8_t* image_data, [[maybe_unused]] const int32_t& x, [[maybe_unused]] const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, [[maybe_unused]] const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
+    filter::types::FilterType random_pixel_colors = {
+        []([[maybe_unused]] const uint8_t* image_data, [[maybe_unused]] const int32_t& x, [[maybe_unused]] const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, [[maybe_unused]] const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
         {
             return RandomPixelColorProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::seq
+        , default_user_type
     };
 
-    types::FilterType gaussian_blur_3x3 = {
-        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
+    filter::types::FilterType gaussian_blur_3x3 = {
+        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
         {
             return GuassianBlue3x3KernelProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::seq
+        , default_user_type
     };
 }
 
 namespace filter::functions::cpu::vectorize {
-    types::FilterType default_filter_process = {
-        [](const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> {
+    filter::types::FilterType default_filter_process = {
+        [](const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> {
             return DefaultFilterProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::unseq
+        , default_user_type
     };
 
-    types::FilterType convert_to_grayscale = {
-        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
+    filter::types::FilterType convert_to_grayscale = {
+        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
         {
             return ConvertToGrayScaleProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::unseq
+        , default_user_type
     };
 
-    types::FilterType random_pixel_colors = {
-        []([[maybe_unused]] const uint8_t* image_data, [[maybe_unused]] const int32_t& x, [[maybe_unused]] const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, [[maybe_unused]] const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
+    filter::types::FilterType random_pixel_colors = {
+        []([[maybe_unused]] const uint8_t* image_data, [[maybe_unused]] const int32_t& x, [[maybe_unused]] const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, [[maybe_unused]] const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
         {
             return RandomPixelColorProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::unseq
+        , default_user_type
     };
 
-    types::FilterType gaussian_blur_3x3 = {
-        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
+    filter::types::FilterType gaussian_blur_3x3 = {
+        [](const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>
         {
             return GuassianBlue3x3KernelProcess(image_data, x, y, bpp, w, h, p);
         }
         , std::execution::unseq
+        , default_user_type
     };
 }
