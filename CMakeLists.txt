@@ -46,6 +46,12 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/libs/cli11)
 ## Add OpenGL packages
 find_package(OpenGL REQUIRED)
 
+## custom thread code
+
+file(GLOB CTHREADS_SRC ${PROJECT_SOURCE_DIR}/common/cthreads/*)
+add_library(cthreads STATIC ${CTHREADS_SRC})
+target_include_directories(cthreads PUBLIC ${PROJECT_SOURCE_DIR}/common)
+
 ## Link and Executable Configuration
 
 file(GLOB GRAPHICS_FILES graphics/*)
@@ -71,12 +77,16 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
                       glm::glm
                       CLI11::CLI11)
 
+target_link_libraries(${PROJECT_NAME} PRIVATE
+                      cthreads)
+
 target_include_directories(${PROJECT_NAME} PUBLIC
                            $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>
                            $<TARGET_PROPERTY:glad,INTERFACE_INCLUDE_DIRECTORIES
                            $<TARGET_PROPERTY:magic_enum::magic_enum,INTERFACE_INCLUDE_DIRECTORIES
                            $<TARGET_PROPERTY:glm::glm,INTERFACE_INCLUDE_DIRECTORIES
-                           $<TARGET_PROPERTY:CLI11::CLI11,INTERFACE_INCLUDE_DIRECTORIES)
+                           $<TARGET_PROPERTY:CLI11::CLI11,INTERFACE_INCLUDE_DIRECTORIES
+                           $<TARGET_PROPERTY:cthreads::cthreads,INTERFACE_INCLUDE_DIRECTORIES)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
