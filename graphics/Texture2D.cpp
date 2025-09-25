@@ -13,24 +13,23 @@ Texture2D::~Texture2D()
   glDeleteTextures(1, &handle);
 }
 
-void Texture2D::Use() const
+void Texture2D::Use()
 {
-  glBindTexture(GL_TEXTURE_2D, GetHandle());
+  SetActiveUnit(activeTexture);
 }
 
 void Texture2D::SetActiveUnit(uint32_t active_texture_unit)
 {
   activeTexture = active_texture_unit;
-  glActiveTexture(GL_TEXTURE0 + active_texture_unit);
-  glBindTexture(GL_TEXTURE_2D, GetHandle());
+  glBindTextureUnit(active_texture_unit, GetHandle());
 }
 
-bool Texture2D::Load(const uint8_t *image_data, int32_t image_width, int32_t image_height, GLint internal_image_format, GLenum data_format)
+bool Texture2D::Load(const uint8_t *image_data, int32_t image_width, int32_t image_height, GLenum internal_image_format, GLenum data_format)
 {
   return Load(image_data, image_width, image_height, internal_image_format, data_format, 0);
 }
 
-bool Texture2D::Load(const uint8_t *image_data, int32_t image_width, int32_t image_height, GLint internal_image_format, GLenum data_format, uint32_t active_texture_unit)
+bool Texture2D::Load(const uint8_t *image_data, int32_t image_width, int32_t image_height, GLenum internal_image_format, GLenum data_format, uint32_t active_texture_unit)
 {
   bool success = true;
 
@@ -41,15 +40,14 @@ bool Texture2D::Load(const uint8_t *image_data, int32_t image_width, int32_t ima
     internalFormat = internal_image_format;
     dataFormat = data_format;
 
-    SetActiveUnit(active_texture_unit);
-    Use();
+    glTextureStorage2D(GetHandle(), 1, internalFormat, width, height);
 
     glTextureParameteri(GetHandle(), GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteri(GetHandle(), GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTextureParameteri(GetHandle(), GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameteri(GetHandle(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glTextureStorage2D(GetHandle(), 1, internalFormat, width, height);
+    SetActiveUnit(active_texture_unit);
 
     Update(image_data, width, height);
   }
@@ -63,7 +61,10 @@ bool Texture2D::Load(const uint8_t *image_data, int32_t image_width, int32_t ima
 
 void Texture2D::Update(const uint8_t *image_data, const int32_t image_width, const int32_t image_height) const
 {
-  glTextureSubImage2D(handle, 0, 0, 0, image_width, image_height, GL_RGB, GL_UNSIGNED_BYTE, image_data);
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image_width, image_height, GL_RGB, GL_UNSIGNED_BYTE, image_data);
+
+  // TODO: glTextureSubImage2D causes major performance issues when it shouldn't. Look into this as a separate issue. The thougt is not everything is strictly using DSA
+  //glTextureSubImage2D(handle, 0, 0, 0, image_width, image_height, GL_RGB, GL_UNSIGNED_BYTE, image_data);
 }
 
 bool Texture2D::Copy(const Texture2D &copy_texture) const
@@ -75,7 +76,7 @@ bool Texture2D::Copy(const Texture2D &copy_texture, const GLint src_level, const
 {
   glCopyImageSubData(handle, GL_TEXTURE_2D, src_level, src_x, src_y, 0, copy_texture.GetHandle(), GL_TEXTURE_2D, dst_level, dst_x, dst_y, 0, width, height, GL_FALSE);
 
-  const GLint error = glGetError();
+  const GLenum error = glGetError();
   if (error != GL_NO_ERROR)
   {
     spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to copy texture {}", copy_texture.GetHandle()));

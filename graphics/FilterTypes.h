@@ -4,7 +4,6 @@
 #include <functional>
 #include <tuple>
 #include <variant>
-#include <execution>
 
 namespace filter::types {
   /*!
@@ -28,7 +27,7 @@ namespace filter::types {
    * FilterUserTypes -> user data types that can be determined {float, int}
    */
 
-  using ExecutionPolicies = std::variant<std::execution::sequenced_policy, std::execution::unsequenced_policy, std::execution::parallel_policy, std::execution::parallel_unsequenced_policy>;
+  enum class ExecutionPolicies {seq, unseq, par, par_unseq};
   using FilterUserTypes = std::variant<float, int>;
   using FilterFuncType = std::function<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(const uint8_t* image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, FilterUserTypes user_data)>;
   using FilterType = std::tuple<FilterFuncType, ExecutionPolicies, FilterUserTypes>;

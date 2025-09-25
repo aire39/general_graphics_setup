@@ -11,6 +11,8 @@
 #include <SDL3_image/SDL_image.h>
 
 #include "support/utility.h"
+#include "support/cprocess.h"
+#include "support/ctypes.h"
 #include "Filters.h"
 
 FImage::FImage()
@@ -23,12 +25,20 @@ FImage::FImage(const std::string& new_name)
 {
 }
 
-FImage::FImage(const std::string &new_name, const int32_t width, const int32_t height, const SDL_PixelFormat format)
+FImage::FImage(const std::string &new_name, const int32_t width, const int32_t height, const SDL_PixelFormat format, const bool base_same_as_orig)
   : Sprite(new_name)
 {
     originalImage = std::shared_ptr<SDL_Surface>(SDL_CreateSurface(width, height, format), &FImage::privDeleteSurface);
 
-    filteredImageData.emplace_back(std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(originalImage.get(), originalImage->format), &FImage::privDeleteSurface));
+    if (base_same_as_orig)
+    {
+        filteredImageData.emplace_back(originalImage);
+    }
+    else
+    {
+        filteredImageData.emplace_back(std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(originalImage.get(), originalImage->format), &FImage::privDeleteSurface));
+    }
+
     filteredImageDataID.insert({"base", 0});
 
     filterProcessCalls.emplace_back(filter::functions::cpu::parallel_vectorize::default_filter_process);
@@ -38,6 +48,44 @@ FImage::FImage(const std::string &new_name, const int32_t width, const int32_t h
 FImage::~FImage()
 {
     ResetSprite();
+}
+
+FImage::FImage(const FImage &other) noexcept
+  : Sprite("FImage")
+{
+    currentViewLayer = other.currentViewLayer;
+    originalImage = std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(other.originalImage.get(), other.originalImage->format), &FImage::privDeleteSurface);
+    tmpBuffer = std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(other.tmpBuffer.get(), other.tmpBuffer->format), &FImage::privDeleteSurface);
+    hasViewChangedToInProcessFilter = other.hasViewChangedToInProcessFilter;
+
+    for (auto other_image : other.filteredImageData)
+    {
+        auto new_image = std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(other_image.get(), other_image->format), &FImage::privDeleteSurface);
+        filteredImageData.emplace_back(new_image);
+    }
+
+    filterProcessCalls = other.filterProcessCalls;
+    filteredImageDataID = other.filteredImageDataID;
+    shouldReapplyFilters = other.shouldReapplyFilters;
+}
+
+FImage::FImage(FImage &&other) noexcept
+  : Sprite("FImage")
+{
+    currentViewLayer = other.currentViewLayer;
+    originalImage = std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(other.originalImage.get(), other.originalImage->format), &FImage::privDeleteSurface);
+    tmpBuffer = std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(other.tmpBuffer.get(), other.tmpBuffer->format), &FImage::privDeleteSurface);
+    hasViewChangedToInProcessFilter = other.hasViewChangedToInProcessFilter;
+
+    for (auto other_image : other.filteredImageData)
+    {
+        auto new_image = std::shared_ptr<SDL_Surface>(SDL_ConvertSurface(other_image.get(), other_image->format), &FImage::privDeleteSurface);
+        filteredImageData.emplace_back(new_image);
+    }
+
+    filterProcessCalls = other.filterProcessCalls;
+    filteredImageDataID = other.filteredImageDataID;
+    shouldReapplyFilters = other.shouldReapplyFilters;
 }
 
 void FImage::LoadTexture(const std::string &image_file)
@@ -282,6 +330,15 @@ void FImage::ChangeFilterName(const int32_t filter_id, const std::string &new_fi
     }
 }
 
+void FImage::UpdateImageFilter(const int32_t image_id)
+{
+    if (image_id >= 0 && image_id < static_cast<glm::int32>(filteredImageData.size()))
+    {
+        constexpr bool save_filter = false;
+        ProcessFilter(image_id, filterProcessCalls[image_id], save_filter);
+    }
+}
+
 void FImage::ViewTexture()
 {
     std::lock_guard viewtex_lock(updateTextureMutex);
@@ -386,6 +443,11 @@ int32_t FImage::GetHeight() const
 int32_t FImage::GetBytesPerPixel() const
 {
     return SDL_GetPixelFormatDetails(originalImage->format)->bytes_per_pixel;
+}
+
+uint32_t FImage::GetNumImages() const
+{
+    return static_cast<uint32_t>(filteredImageData.size());
 }
 
 void FImage::SetShouldReapplyFilters(const bool enable)
@@ -865,16 +927,14 @@ SDL_Surface * FImage::privRunFilter(const SDL_Surface *read_image, SDL_Surface *
         }
 
         const auto byte_read_image = static_cast<uint8_t *>(read_image->pixels);
-        std::span image_data_view(byte_read_image, read_image->w * read_image->h * bytes_per_pixel);
-        auto image_data_pixels = image_data_view | std::views::stride(bytes_per_pixel) | std::views::transform([](uint8_t& value) -> uint8_t* { return &value;});
+        const std::span image_data_view(byte_read_image, read_image->w * read_image->h * bytes_per_pixel);
+        auto image_data_pixels = image_data_view | gss::views::stride(bytes_per_pixel) | std::views::transform([](uint8_t& value) -> uint8_t* { return &value;});
 
-        std::visit([&](const auto & policy) {
-            std::for_each(policy, image_data_pixels.begin(), image_data_pixels.end(), [&](const uint8_t * pixel_ptr) -> void {
-
+        gss::cprocess::loops::for_each(std::get<filter::types::ExecutionPolicies>(filter), image_data_pixels.begin(), image_data_pixels.end(), [&]([[maybe_unused]] const uint8_t * pixel_ptr) -> void {
                 /**
                  * @summary
-                 * will do a parallel execution on the image data to appy filter in an unspecified sequence as order
-                 * should not matter
+                 * will do a parallel/sequence execution on the image data to appy filter. Wether this is parallel or
+                 * sequential execution depends on the filter being used
                  *
                  * @brief pixel_ptr
                  * is the pointing to the start of an individual pixel
@@ -896,7 +956,7 @@ SDL_Surface * FImage::privRunFilter(const SDL_Surface *read_image, SDL_Surface *
 
                 if (!in_progress) return;
 
-                const auto idx = static_cast<int32_t>(pixel_ptr - image_data_pixels.front()) / bytes_per_pixel;
+                const auto idx = static_cast<uint32_t>(pixel_ptr - reinterpret_cast<uint8_t *>(image_data_pixels.front())) / bytes_per_pixel;
                 const int32_t j = idx % read_image->w;
                 const int32_t i = idx / read_image->w;
 
@@ -911,8 +971,7 @@ SDL_Surface * FImage::privRunFilter(const SDL_Surface *read_image, SDL_Surface *
                 {
                     image_write_byte_data[(j * bytes_per_pixel) + (i * write_image->pitch) + 3] = std::get<3>(pixel_value);
                 }
-            });
-        }, std::get<filter::types::ExecutionPolicies>(filter));
+        });
     }
 
     return write_image;

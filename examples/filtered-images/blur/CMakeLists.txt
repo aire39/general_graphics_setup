@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 ## define project root directory to make it easier to define file locations in code related to project
 
-add_definitions(-DEXAMPLES_PROJECT_ROOT_PATH="${CMAKE_CURRENT_SOURCE_DIR}../../")
+add_definitions(-DEXAMPLES_PROJECT_ROOT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../")
 
 # setup application
 
