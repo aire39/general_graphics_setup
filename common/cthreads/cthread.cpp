@@ -1,5 +1,11 @@
 #include "cthread.h"
 
+#if GCC_VERSION > 140200
+#include <print>
+#else
+#include <stdio.h>
+#endif
+
 #if defined(_WIN32) || defined(WIN32)
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -34,7 +40,7 @@ static EXCEPTION_DISPOSITION NTAPI ignore_handler(EXCEPTION_RECORD *rec,
 #if defined(_WIN32) || defined(WIN32)
 // set thread name for windows
 //https://gist.github.com/rossy/7faf0ab90a54d6b5a46f
-void cthread::setname(const std::string& name)
+void cthread::setname(std::string& name)
 {
 
   static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
@@ -72,14 +78,14 @@ void cthread::setdescription(const std::string& description)
 }
 
 #elif defined(linux) || defined(unix)
-void cthread::setname(const std::string& name)
+void cthread::setname(std::string& name)
 {
   if (name.size() > 15)
   {
     name[15] = '\0';
   }
 
-  pthread_setname_np(native_handle(), name.c_str());
+  pthread_setname_np(pthread_self(), name.c_str());
 }
 #endif
 
@@ -95,10 +101,14 @@ std::string cthread::description()
 
 void cthread::cinit(std::string && thread_name, std::string && thread_description, std::function<void()> && thread_task) noexcept
 {
-  threadName = thread_name;
-  threadDesc = thread_description;
-
   setname(thread_name);
 
-  thread_task();
+  try
+  {
+    thread_task();
+  }
+  catch (...)
+  {
+    std::printf("cthread caught an exception!");
+  }
 }

@@ -9,10 +9,10 @@ class Texture2D
     Texture2D();
     ~Texture2D();
 
-    void Use() const;
+    void Use();
     void SetActiveUnit(uint32_t active_texture_unit);
-    bool Load(const uint8_t* image_data, int32_t image_width, int32_t image_height, GLint internal_image_format, GLenum data_format);
-    bool Load(const uint8_t* image_data, int32_t image_width, int32_t image_height, GLint internal_image_format, GLenum data_format, uint32_t active_texture_unit);
+    bool Load(const uint8_t* image_data, int32_t image_width, int32_t image_height, GLenum internal_image_format, GLenum data_format);
+    bool Load(const uint8_t* image_data, int32_t image_width, int32_t image_height, GLenum internal_image_format, GLenum data_format, uint32_t active_texture_unit);
     void Update(const uint8_t* image_data, int32_t image_width, int32_t image_height) const;
     [[nodiscard]] bool Copy(const Texture2D& copy_texture) const;
     [[nodiscard]] bool Copy(const Texture2D& copy_texture, GLint src_level, GLint src_x, GLint src_y, GLint dst_level, GLint dst_x, GLint dst_y) const;

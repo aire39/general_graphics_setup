@@ -31,14 +31,14 @@ namespace prebuilt_shaders {
   constexpr std::string_view fragment_shader_code = "#version 450 core\n" \
                                                     "out vec4 FragColor;\n" \
                                                     "uniform sampler2D image;\n" \
-                                                    "  \n" \
+                                                    "\n" \
                                                     "in vec2 texcoord0;\n" \
                                                     "in vec4 col;\n" \
                                                     "in vec4 vertexColor; // the input variable from the vertex shader (same name and same type)  \n" \
                                                     "\n" \
                                                     "void main()\n" \
                                                     "{\n" \
-                                                    "    vec4 tex_color = texture2D(image, texcoord0);" \
+                                                    "    vec4 tex_color = texture(image, texcoord0);\n" \
                                                     "    //FragColor = vertexColor;\n" \
                                                     "    FragColor = tex_color;\n" \
                                                     "}";

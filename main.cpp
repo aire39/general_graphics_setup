@@ -1,7 +1,5 @@
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
+#include <iostream>
+#include <string_view>
 #include <cmath>
 #include <string>
 
@@ -28,14 +26,21 @@
 
 #include "graphics/PrebuiltShaderSources.h"
 
+#include "support/logging.h"
+#include "support/utility.h"
+
 void SetupShaderParams(const ShaderProgram & shader_program);
 bool WindowResize(void * data, SDL_Event * event);
-void SetConsoleMode();
 void PrintStartMessage();
+float RenderElapsedTime();
+
+constexpr int32_t window_width  = 640;
+constexpr int32_t window_height = 480;
 
 int32_t main(int32_t argc, char*argv[])
 {
-  SetConsoleMode();
+  logging::set_logging_output();
+  utility::EnableConsoleMode();
 
   CLI::App app("easily setup graphics source for getting started with opengl and potentially other graphic libraries for <reason for template>", "graphics");
 
@@ -48,8 +53,6 @@ int32_t main(int32_t argc, char*argv[])
   // sdl and window initialization
 
   constexpr static std::string_view window_name = "Graphics Window";
-  constexpr int32_t window_width  = 800;
-  constexpr int32_t window_height = 600;
   constexpr uint64_t sdl_window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 
   auto graphics_window = GraphicsWindow(window_name.data(), window_width, window_height, sdl_window_flags);
@@ -85,10 +88,12 @@ int32_t main(int32_t argc, char*argv[])
 
   SDL_AddEventWatch(WindowResize, graphics_window.GetSDLWindow());
 
+  bool is_running = true;
+
   // event handling
 
-  bool is_running = true;
   SDL_Event sdl_event;
+
   while (is_running)
   {
     while (SDL_PollEvent(&sdl_event))
@@ -100,8 +105,6 @@ int32_t main(int32_t argc, char*argv[])
         is_running = false;
       }
     }
-
-    SDL_Delay(16);
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -122,7 +125,7 @@ int32_t main(int32_t argc, char*argv[])
     auto model_matrix = glm::mat4(1.0f);
     model_matrix = glm::translate(model_matrix, sprite.GetPosition());
     //model_matrix = glm::rotate(model_matrix, glm::radians(location_time * -100.0f), {0.0f, 0.0f, 1.0f});
-    model_matrix = glm::scale(model_matrix, {800.0f, 600.0f, 1.0f});
+    model_matrix = glm::scale(model_matrix, {window_width, window_height, 1.0f});
     shader_program.SetFloat4x4("model", glm::value_ptr(model_matrix));
 
     sprite.Draw();
@@ -145,10 +148,10 @@ int32_t main(int32_t argc, char*argv[])
 
 void SetupShaderParams(const ShaderProgram & shader_program)
 {
-  constexpr float l = -400;
-  constexpr float r =  400;
-  constexpr float b =  300;
-  constexpr float t = -300;
+  constexpr float l = -window_width / 2.0f;
+  constexpr float r =  window_width / 2.0f;
+  constexpr float b =  window_height / 2.0f;
+  constexpr float t = -window_height / 2.0f;
   constexpr float n = -1.0f;
   constexpr float f =  1.0f;
 
@@ -176,6 +179,7 @@ bool WindowResize(void * data, SDL_Event * event)
     if (window == static_cast<SDL_Window*>(data))
     {
       spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
+      glViewport(0, 0, event->window.data1, event->window.data2);
       event_handled = true;
     }
   }
@@ -183,23 +187,7 @@ bool WindowResize(void * data, SDL_Event * event)
   return event_handled;
 }
 
-void SetConsoleMode()
-{
-  #ifdef _WIN32
-    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (handle != INVALID_HANDLE_VALUE) {
-      DWORD mode = 0;
-      if (GetConsoleMode(handle, &mode)) {
-        mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        SetConsoleMode(handle, mode);
-      }
-    }
-  #endif
-}
-
 void PrintStartMessage()
 {
-  spdlog::info(
-    fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold
-                   ,"Starting: Hello, Graphics World!"));
+  logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold,"Starting: Hello, Graphics World!"));
 }

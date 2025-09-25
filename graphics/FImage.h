@@ -33,8 +33,11 @@ class FImage final : public Sprite
   public:
     FImage();
     explicit FImage(const std::string& new_name);
-    explicit FImage(const std::string& new_name, int32_t width, int32_t height, SDL_PixelFormat format);
+    explicit FImage(const std::string& new_name, int32_t width, int32_t height, SDL_PixelFormat format, bool base_same_as_orig = false);
     ~FImage() override;
+
+    FImage(const FImage& other) noexcept;
+    FImage(FImage&& other) noexcept;
 
     void LoadTexture(const std::string& image_file) override;
     void LoadTexture(const SDL_Surface* image) override;
@@ -62,6 +65,8 @@ class FImage final : public Sprite
     void ChangeFilterName(const std::string& filter_name, const std::string& new_filter_name);
     void ChangeFilterName(int32_t filter_id, const std::string& new_filter_name);
 
+    void UpdateImageFilter(int32_t image_id);
+
     void ViewTexture();
     void ViewTexture(int32_t filter_id);
     void ViewTexture(const std::string& filter_name);
@@ -76,6 +81,7 @@ class FImage final : public Sprite
     int32_t GetWidth() const override;
     int32_t GetHeight() const override;
     int32_t GetBytesPerPixel() const override;
+    uint32_t GetNumImages() const;
 
     void SetShouldReapplyFilters(bool enable);
 
@@ -92,7 +98,6 @@ class FImage final : public Sprite
 
   private:
     int32_t currentViewLayer = 0;
-    using ImageDeleteFunc = std::function<void(SDL_Surface*)>;
     std::shared_ptr<SDL_Surface> originalImage;
     std::shared_ptr<SDL_Surface> tmpBuffer;
     bool hasViewChangedToInProcessFilter = false;
@@ -112,9 +117,10 @@ class FImage final : public Sprite
     std::mutex updateTextureMutex;
     std::mutex mutex;
 
+    enum class RenameOrder {ADDING, REMOVING};
+
     void ResetSprite();
 
-    enum class RenameOrder {ADDING, REMOVING};
     std::unordered_map<std::string, int32_t> RemapIDs(const std::unordered_map<std::string, int32_t>& source, int32_t image_id, RenameOrder rename_order);
     std::unordered_map<int32_t, int32_t> RemapRepeatIDs(const std::unordered_map<int32_t, int32_t>& source, int32_t image_id, RenameOrder rename_order);
 

@@ -4,9 +4,38 @@ project (graphics VERSION 0.2.0)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 23)
 
+# Add the path to your cmake modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+# cmake helper functions
+
+include(cmake/utilities.cmake)
+
+# Detect if running under WSL
+
+set(RUNNING_ON_WSL FALSE)
+
+if(UNIX AND EXISTS "/proc/version")
+    file(READ "/proc/version" PROC_VERSION_CONTENTS)
+    string(TOLOWER "${PROC_VERSION_CONTENTS}" PROC_VERSION_CONTENTS)  # normalize casing
+
+    if(PROC_VERSION_CONTENTS MATCHES "microsoft-standard"
+        OR PROC_VERSION_CONTENTS MATCHES "wsl"
+        OR PROC_VERSION_CONTENTS MATCHES "microsoft")
+        set(RUNNING_ON_WSL TRUE)
+        message(STATUS "Detected WSL environment.")
+    endif()
+endif()
+
+## basic includes
+
+include_directories(${CMAKE_SOURCE_DIR})
+
 ## define project root directory to make it easier to define file locations in code related to project
 
 add_definitions(-DPROJECT_ROOT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/")
+
+set(ENABLE_PLATFORM_CHECKS OFF CACHE BOOL "Enable platform specific checks/fixes")
 
 ## get nasm assembler for windows
 
@@ -36,6 +65,21 @@ if (WIN32)
   set(CMAKE_ASM_NASM_COMPILER ${PROJECT_SOURCE_DIR}/nasm/nasm-src/nasm.exe)
   set(ENV{PATH} "${PROJECT_SOURCE_DIR}/nasm/nasm-src/;$ENV{PATH}")
   set(NASM_PATH ${PROJECT_SOURCE_DIR}/nasm/nasm-src/nasm.exe)
+endif ()
+
+# Add ranges support for clang
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    include(cmake/ranges-v3.cmake)
+    add_range_v3()
+endif ()
+
+# Add ranges support for clang
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+else ()
+    include(cmake/tbb.cmake)
+    add_tbb()
 endif ()
 
 ## Add SDL library (Simple Direct Media Libary)
@@ -73,6 +117,7 @@ target_include_directories(imgui_backend PRIVATE libs/gui/imgui libs/gui/imgui l
 
 ## Add SPD Log
 
+add_compile_definitions(SPDLOG_ENABLE_SOURCE_LOCATION)
 add_subdirectory(${PROJECT_SOURCE_DIR}/libs/spdlog)
 
 ## Add GLM Math Library
@@ -93,7 +138,7 @@ find_package(OpenGL REQUIRED)
 ## custom thread code
 
 set(MAX_ENHANCE_SPRITE_THREADS 8 CACHE STRING "Set maximum number of threads for EnhanceSprite threadpool")
-add_definitions(-DMAX_ENHANCE_SPRITE_THREADS=${MAX_ENHANCE_SPRITE_THREADS})
+add_compile_definitions(-DMAX_ENHANCE_SPRITE_THREADS=${MAX_ENHANCE_SPRITE_THREADS})
 
 file(GLOB CTHREADS_SRC ${PROJECT_SOURCE_DIR}/common/cthreads/*)
 add_library(cthreads STATIC ${CTHREADS_SRC})
@@ -137,12 +182,25 @@ if (BUILD_EXAMPLE_FIMAGE_MANFILT OR BUILD_ALL_EXAMPLES)
     add_subdirectory(examples/filtered-images/manual-filter)
 endif ()
 
+if (WIN32 AND NOT RUNNING_ON_WSL)
+    unset(CAMERA_SRC)
+    file (GLOB CAMERA_SRC video/camera/common/CameraBase.h video/camera/platform/WinCamera.*)
+    colored_message("1;34" "Camera support: Windows")
+elseif (RUNNING_ON_WSL OR UNIX)
+    unset(CAMERA_SRC)
+    file (GLOB CAMERA_SRC video/camera/common/CameraBase.h video/camera/platform/LinuxCamera*)
+    colored_message("1;34" "Camera support: Linux")
+else ()
+        colored_message("1;33" "Camera support: None")
+        unset(CAMERA_SRC)
+endif ()
 
 # setup application
 
 add_executable(${PROJECT_NAME}
                ${GRAPHICS_FILES}
                ${GLAD_SOURCES}
+               ${CAMERA_SRC}
                GraphicsWindow.h
                GraphicsWindow.cpp
                OpenGLContext.h
@@ -159,6 +217,7 @@ add_executable(${PROJECT_NAME}
 add_library(${PROJECT_NAME}-static STATIC
             ${GRAPHICS_FILES}
             ${GLAD_SOURCES}
+            ${CAMERA_SRC}
             GraphicsWindow.h
             GraphicsWindow.cpp
             OpenGLContext.h
@@ -170,6 +229,38 @@ add_library(${PROJECT_NAME}-static STATIC
             graphics/Filters.cpp
             graphics/PixelData.h
             common/support/utility.h)
+
+if (WIN32)
+target_link_libraries(${PROJECT_NAME} PUBLIC
+                      SDL3::SDL3-static
+                      SDL3_image::SDL3_image
+                      ${OPENGL_LIBRARIES}
+                      glad
+                      spdlog::spdlog
+                      magic_enum::magic_enum
+                      glm::glm
+                      CLI11::CLI11
+                      mfplat
+                      mfreadwrite
+                      mf
+                      mfuuid
+                      ole32)
+
+target_link_libraries(${PROJECT_NAME}-static PUBLIC
+                      SDL3::SDL3-static
+                      SDL3_image::SDL3_image
+                      ${OPENGL_LIBRARIES}
+                      glad
+                      spdlog::spdlog
+                      magic_enum::magic_enum
+                      glm::glm
+                      CLI11::CLI11
+                      mfplat
+                      mfreadwrite
+                      mf
+                      mfuuid
+                      ole32)
+else ()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
                       SDL3::SDL3-static
@@ -191,6 +282,9 @@ target_link_libraries(${PROJECT_NAME}-static PUBLIC
                       glm::glm
                       CLI11::CLI11)
 
+endif ()
+
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
                       cthreads)
 
@@ -206,11 +300,22 @@ target_link_libraries(${PROJECT_NAME}-static PRIVATE
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else()
-  target_link_libraries(${PROJECT_NAME} PUBLIC
-                        TBB::tbb)
 
-  target_link_libraries(${PROJECT_NAME}-static PUBLIC
-          TBB::tbb)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      target_link_libraries(${PROJECT_NAME} PUBLIC
+                            TBB::tbb
+                            range-v3)
+
+      target_link_libraries(${PROJECT_NAME}-static PUBLIC
+                            TBB::tbb
+                            range-v3)
+  else ()
+      target_link_libraries(${PROJECT_NAME} PUBLIC
+                            TBB::tbb)
+
+      target_link_libraries(${PROJECT_NAME}-static PUBLIC
+              TBB::tbb)
+  endif ()
 endif ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -240,11 +345,32 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 ## Compiler Options
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+
+    if (ENABLE_PLATFORM_CHECKS)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_WINDOWS_PLATFORM_CHECKS=1)
+    else ()
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_WINDOWS_PLATFORM_CHECKS=0)
+    endif()
+
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:/W4 /WX /arch:AVX2 /Od>)
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:/W4 /WX /arch:AVX2 /Ot /O2>)
 else ()
-    target_compile_options(${PROJECT_NAME}-static PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O0 -g>)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O0 -g>)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O3>)
-    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELWITHDEBINFO>:-ggdb -Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O3>)
+
+    if (ENABLE_PLATFORM_CHECKS)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_LINUX_PLATFORM_CHECKS=1)
+    else ()
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_LINUX_PLATFORM_CHECKS=0)
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(${PROJECT_NAME}-static PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -Wno-deprecated-declarations -Wno-sign-conversion -Wno-deprecated-literal-operator -mavx2 -O0 -g>)
+        target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -Wno-deprecated-declarations -Wno-sign-conversion -Wno-deprecated-literal-operator -mavx2 -O0 -g>)
+        target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -Wno-deprecated-declarations -Wno-sign-conversion -Wno-deprecated-literal-operator -mavx2 -O3>)
+        target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELWITHDEBINFO>:-ggdb -Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -Wno-deprecated-declarations -Wno-deprecated-literal-operator -Wno-sign-conversion -mavx2 -O3>)
+    else ()
+        target_compile_options(${PROJECT_NAME}-static PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O0 -g>)
+        target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:DEBUG>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O0 -g>)
+        target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELEASE>:-Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O3>)
+        target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:RELWITHDEBINFO>:-ggdb -Wall -Wextra -Wpedantic -Wconversion -Wunused -Werror -mavx2 -O3>)
+    endif ()
 endif ()

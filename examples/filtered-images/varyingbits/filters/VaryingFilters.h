@@ -25,7 +25,7 @@ namespace filter::functions::cpu::parallel_vectorize {
     return {r, g, b, a};
 
   }
-    , std::execution::par_unseq
+    , filter::types::ExecutionPolicies::par_unseq
     , default_user_value
   };
 }

@@ -77,7 +77,7 @@ class cthread : public std::thread
     {
     }
 
-    static void setname(const std::string &name);
+    void setname(std::string &name);
     void setdescription(const std::string &description);
 
     std::string name();
