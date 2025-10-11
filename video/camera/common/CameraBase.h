@@ -17,6 +17,7 @@ namespace gss::video::camera {
       virtual void ChangeFramerate(gss::video::camera::types::FrameRate frame_rate, bool reset = true) = 0;
       virtual void ChangeResolution(gss::video::camera::types::FrameSize frame_size, bool reset = true) = 0;
       virtual void ChangePixelFormat(gss::video::camera::types::VideoFormat video_format, bool reset = true) = 0;
+      virtual void IgnoreFormatFail(bool ignore, bool reset = true) = 0;
       virtual std::shared_ptr<FImage> ExtractFrame() = 0;
       virtual std::shared_ptr<FImage> CopyFrame() = 0;
 
@@ -25,6 +26,11 @@ namespace gss::video::camera {
       virtual gss::video::camera::types::VideoFormat GetPixelFormat() const = 0;
       virtual float GetRunningFps() const = 0;
       virtual bool IsCapturing() const = 0;
+
+      virtual uint32_t GetFailCount() const = 0;
+      virtual uint32_t GetSkippedFrames() const = 0;
+      virtual uint32_t GetMaxBufers() const = 0;
+      virtual uint32_t GetFrameCount() const = 0;
 
     protected:
       virtual bool AllocateBuffers() = 0;

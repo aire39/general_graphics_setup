@@ -7,6 +7,7 @@
 namespace {
     constexpr size_t num_sprite_vertices = 4;
     constexpr size_t num_sprite_indices = 4;
+    constexpr bool allow_logging = false;
 }
 
 Sprite::Sprite()
@@ -148,8 +149,9 @@ uint32_t Sprite::TotalNumber()
 
 void Sprite::Init()
 {
-  const size_t layout_data_size = sizeof(primitive::Vertex) * vertices.size();
-  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "Sprite size: {} bytes", layout_data_size));
+  [[maybe_unused]] const size_t layout_data_size = sizeof(primitive::Vertex) * vertices.size();
+  // ReSharper disable once CppDFAUnreachableCode NOLINTNEXTLINE(clang-diagnostic-unreachable-code)
+  if constexpr (allow_logging) spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "Sprite size: {} bytes", layout_data_size));
   vertices[0] = {.position = {-0.5f, -0.5f, 0.0f}, .color = {1.0f, 1.0f, 1.0f}, .uvcoords_0 = {0.0f, 0.0f}, .uvcoords_1 = {0.0f, 0.0f}};
   vertices[1] = {.position = { 0.5f, -0.5f, 0.0f}, .color = {1.0f, 1.0f, 1.0f}, .uvcoords_0 = {1.0f, 0.0f}, .uvcoords_1 = {1.0f, 0.0f}};
   vertices[2] = {.position = { 0.5f,  0.5f, 0.0f}, .color = {1.0f, 1.0f, 1.0f}, .uvcoords_0 = {1.0f, 1.0f}, .uvcoords_1 = {1.0f, 1.0f}};
@@ -164,10 +166,12 @@ void Sprite::Init()
 void Sprite::Update()
 {
   glBindVertexArray(vaoHandle);
-  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "VAO handle id: {}", vaoHandle));
+  // ReSharper disable once CppDFAUnreachableCode NOLINTNEXTLINE(clang-diagnostic-unreachable-code)
+  if constexpr (allow_logging) spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "VAO handle id: {}", vaoHandle));
 
   glBindBuffer(GL_ARRAY_BUFFER, vboHandle);
-  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "VBO handle id: {}", vboHandle));
+  // ReSharper disable once CppDFAUnreachableCode NOLINTNEXTLINE(clang-diagnostic-unreachable-code)
+  if constexpr (allow_logging) spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "VBO handle id: {}", vboHandle));
   glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(sizeof(primitive::Vertex) * vertices.size()), vertices.data(), GL_STATIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(primitive::Vertex), nullptr);
@@ -181,6 +185,7 @@ void Sprite::Update()
   glEnableVertexAttribArray(3);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboHandle);
-  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "IBO handle id: {}", iboHandle));
+  // ReSharper disable once CppDFAUnreachableCode NOLINTNEXTLINE(clang-diagnostic-unreachable-code)
+  if constexpr (allow_logging) spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "IBO handle id: {}", iboHandle));
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * num_sprite_indices, indices.data(), GL_STATIC_DRAW);
 }

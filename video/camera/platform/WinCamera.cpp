@@ -36,21 +36,31 @@ namespace gss::video::camera::platform {
   WinCamera::WinCamera(const uint32_t capture_device_index, int32_t width, int32_t height, const gss::video::camera::types::FrameRate &fps, const gss::video::camera::types::VideoFormat video_format, bool ignore_fail_format)
     :captureDevice (capture_device_index)
     ,width(width)
+    ,s_width(width)
     ,height(height)
+    ,s_height(height)
     ,fps(fps)
+    ,s_fps(fps)
     ,ignoreFailFormat(ignore_fail_format)
+    ,s_ignoreFailFormat(ignoreFailFormat)
     ,videoFormat(video_format)
+    ,s_videoFormat(videoFormat)
   {
     devicePath = FindCaptureDeviceByPath(capture_device_index);
   }
 
   WinCamera::WinCamera(const std::string &capture_device_path, int32_t width, int32_t height, const gss::video::camera::types::FrameRate &fps, gss::video::camera::types::VideoFormat video_format, bool ignore_fail_format)
     :width(width)
+    ,s_width(width)
     ,height(height)
+    ,s_height(height)
     ,fps(fps)
+    ,s_fps(fps)
     ,ignoreFailFormat(ignore_fail_format)
+    ,s_ignoreFailFormat(ignoreFailFormat)
     ,devicePath(capture_device_path)
     ,videoFormat(video_format)
+    ,s_videoFormat(videoFormat)
   {
     captureDevice = FindCaptureDeviceByPath(capture_device_path.c_str());
   }
@@ -62,6 +72,12 @@ namespace gss::video::camera::platform {
 
   void WinCamera::StartCapture()
   {
+    width = s_width;
+    height = s_height;
+    fps = s_fps;
+    videoFormat = s_videoFormat;
+    ignoreFailFormat = s_ignoreFailFormat;
+
     if (isPause && isCapturing)
     {
       isPause = false;
@@ -175,9 +191,9 @@ namespace gss::video::camera::platform {
 
   void WinCamera::ChangeFramerate(gss::video::camera::types::FrameRate frame_rate, bool reset)
   {
-    if (fps.first != frame_rate.first || fps.second != frame_rate.second)
+    if (s_fps.first != frame_rate.first || s_fps.second != frame_rate.second)
     {
-      fps = frame_rate;
+      s_fps = frame_rate;
       if (reset)
       {
         Reset();
@@ -187,10 +203,10 @@ namespace gss::video::camera::platform {
 
   void WinCamera::ChangeResolution(gss::video::camera::types::FrameSize frame_size, bool reset)
   {
-    if (width != static_cast<int32_t>(frame_size.first) || height != static_cast<int32_t>(frame_size.second))
+    if (s_width != static_cast<int32_t>(frame_size.first) || s_height != static_cast<int32_t>(frame_size.second))
     {
-      width = frame_size.first;
-      height = frame_size.second;
+      s_width = frame_size.first;
+      s_height = frame_size.second;
       if (reset)
       {
         Reset();
@@ -200,9 +216,21 @@ namespace gss::video::camera::platform {
 
   void WinCamera::ChangePixelFormat(gss::video::camera::types::VideoFormat video_format, bool reset)
   {
-    if (videoFormat != video_format)
+    if (s_videoFormat != video_format)
     {
-      videoFormat = video_format;
+      s_videoFormat = video_format;
+      if (reset)
+      {
+        Reset();
+      }
+    }
+  }
+
+  void WinCamera::IgnoreFormatFail(bool ignore, bool reset)
+  {
+    if (s_ignoreFailFormat != ignore)
+    {
+      s_ignoreFailFormat = ignore;
       if (reset)
       {
         Reset();
@@ -268,6 +296,26 @@ namespace gss::video::camera::platform {
   bool WinCamera::IsCapturing() const
   {
     return isCapturing;
+  }
+
+  uint32_t WinCamera::GetFailCount() const
+  {
+    return failCount;
+  }
+
+  uint32_t WinCamera::GetSkippedFrames() const
+  {
+    return skipFrames;
+  }
+
+  uint32_t WinCamera::GetMaxBufers() const
+  {
+    return default_number_of_buffers;
+  }
+
+  uint32_t WinCamera::GetFrameCount() const
+  {
+    return frameCount;
   }
 
   bool WinCamera::AllocateBuffers()
@@ -571,6 +619,10 @@ namespace gss::video::camera::platform {
                 });
                 readyFrameQueue.push(q_ready_frame);
               }
+            }
+            else
+            {
+              skipFrames++;
             }
           }
         }

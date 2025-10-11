@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.22)
 project (graphics VERSION 0.2.0)
 
 set(CMAKE_C_STANDARD 23)
@@ -69,17 +69,26 @@ endif ()
 
 # Add ranges support for clang
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0) )
     include(cmake/ranges-v3.cmake)
     add_range_v3()
 endif ()
 
 # Add ranges support for clang
 
+## Add TBB to enable parallel execution
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+else()
+  find_package(TBB QUIET)
+endif ()
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else ()
-    include(cmake/tbb.cmake)
-    add_tbb()
+    if (TBB_FOUND)
+    else()
+        include(cmake/tbb.cmake)
+        add_tbb()
+    endif()
 endif ()
 
 ## Add SDL library (Simple Direct Media Libary)
@@ -138,49 +147,15 @@ find_package(OpenGL REQUIRED)
 ## custom thread code
 
 set(MAX_ENHANCE_SPRITE_THREADS 8 CACHE STRING "Set maximum number of threads for EnhanceSprite threadpool")
-add_compile_definitions(-DMAX_ENHANCE_SPRITE_THREADS=${MAX_ENHANCE_SPRITE_THREADS})
+add_compile_definitions(MAX_ENHANCE_SPRITE_THREADS=${MAX_ENHANCE_SPRITE_THREADS})
 
 file(GLOB CTHREADS_SRC ${PROJECT_SOURCE_DIR}/common/cthreads/*)
 add_library(cthreads STATIC ${CTHREADS_SRC})
 target_include_directories(cthreads PUBLIC ${PROJECT_SOURCE_DIR}/common)
 
-## Add TBB to enable parallel execution
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-else()
-  find_package(TBB REQUIRED)
-endif ()
-
 ## Link and Executable Configuration
 
 file(GLOB GRAPHICS_FILES graphics/*)
-
-# setup examples
-
-option(BUILD_ALL_EXAMPLES "Build All Examples" OFF)
-option(BUILD_EXAMPLE_FIMAGE_GRAYSCALE "Build Grayscale Image Filtering Example" OFF)
-option(BUILD_EXAMPLE_FIMAGE_BLUR "Build Blur Image Filtering Example" OFF)
-option(BUILD_EXAMPLE_FIMAGE_VARYBITS "Build Varying Bits Image Filtering Example" OFF)
-option(BUILD_EXAMPLE_FIMAGE_MANFILT "Build Manual Filtering Example" OFF)
-
-if (BUILD_EXAMPLE_FIMAGE_GRAYSCALE OR BUILD_ALL_EXAMPLES)
-    message("Build Grayscale Example...")
-    add_subdirectory(examples/filtered-images/grayscale)
-endif ()
-
-if (BUILD_EXAMPLE_FIMAGE_BLUR OR BUILD_ALL_EXAMPLES)
-    message("Build Blur Example...")
-    add_subdirectory(examples/filtered-images/blur)
-endif ()
-
-if (BUILD_EXAMPLE_FIMAGE_VARYBITS OR BUILD_ALL_EXAMPLES)
-    message("Build Varying Bits Example...")
-    add_subdirectory(examples/filtered-images/varyingbits)
-endif ()
-
-if (BUILD_EXAMPLE_FIMAGE_MANFILT OR BUILD_ALL_EXAMPLES)
-    message("Build Manual Filtering Example...")
-    add_subdirectory(examples/filtered-images/manual-filter)
-endif ()
 
 if (WIN32 AND NOT RUNNING_ON_WSL)
     unset(CAMERA_SRC)
@@ -194,6 +169,10 @@ else ()
         colored_message("1;33" "Camera support: None")
         unset(CAMERA_SRC)
 endif ()
+
+# setup examples
+
+include(cmake/examples.cmake)
 
 # setup application
 
@@ -301,7 +280,7 @@ target_link_libraries(${PROJECT_NAME}-static PRIVATE
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else()
 
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0))
       target_link_libraries(${PROJECT_NAME} PUBLIC
                             TBB::tbb
                             range-v3)

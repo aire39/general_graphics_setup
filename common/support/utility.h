@@ -7,6 +7,8 @@
 
 #include <cstring>
 #include <string>
+#include <charconv>
+#include <algorithm>
 #include <glad/glad.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bundled/color.h>
@@ -38,6 +40,12 @@ namespace utility{
 #elif defined(_MSC_VER)
 #pragma optimize( "", on )
 #endif
+
+    constexpr uint8_t clamp_to_byte(const int32_t v)
+    {
+        const int32_t value = std::clamp(v, 0, 255);
+        return static_cast<uint8_t>(value);
+    }
 
     inline int32_t parse_number_from_suffix(std::string_view sv)
     {
