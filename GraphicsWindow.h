@@ -41,5 +41,5 @@ class GraphicsWindow
     int32_t windowWidth = -1;
     int32_t windowHeight = -1;
     math_types::float4 backgroundColor {0.4f, 0.4f, 0.9f, 1.0f};
-    [[maybe_unused]]std::unique_ptr<OpenGLContext> glContext;
+    std::unique_ptr<OpenGLContext> glContext;
 };

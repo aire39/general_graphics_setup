@@ -4,6 +4,7 @@
 #include <execution>
 #include <cctype>
 #include <ranges>
+#include <span>
 #include <future>
 
 #include <spdlog/spdlog.h>
@@ -928,7 +929,7 @@ SDL_Surface * FImage::privRunFilter(const SDL_Surface *read_image, SDL_Surface *
 
         const auto byte_read_image = static_cast<uint8_t *>(read_image->pixels);
         const std::span image_data_view(byte_read_image, read_image->w * read_image->h * bytes_per_pixel);
-        auto image_data_pixels = image_data_view | gss::views::stride(bytes_per_pixel) | std::views::transform([](uint8_t& value) -> uint8_t* { return &value;});
+        auto image_data_pixels = image_data_view | gss::views::stride(bytes_per_pixel) | gss::views::transform([](uint8_t& value) -> uint8_t* { return &value;});
 
         gss::cprocess::loops::for_each(std::get<filter::types::ExecutionPolicies>(filter), image_data_pixels.begin(), image_data_pixels.end(), [&]([[maybe_unused]] const uint8_t * pixel_ptr) -> void {
                 /**

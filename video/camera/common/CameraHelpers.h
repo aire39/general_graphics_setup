@@ -53,4 +53,58 @@ namespace gss::video::camera::helpers {
 
     return format;
   }
+
+  #if defined(_WIN32)
+
+  inline std::string get_video_format_str(const gss::video::camera::types::VideoFormat format)
+  {
+    std::string format_str;
+
+    if (IsEqualGUID(format, gss::video::camera::formats::UYVY_FORMAT))
+    {
+      format_str = "UYVY";
+    }
+    else if (IsEqualGUID(format, gss::video::camera::formats::YUY2_FORMAT))
+    {
+      format_str = "YUY2";
+    }
+    else if (IsEqualGUID(format, gss::video::camera::formats::NV12_FORMAT))
+    {
+      format_str = "NV12";
+    }
+    else if (IsEqualGUID(format, gss::video::camera::formats::RGB_FORMAT))
+    {
+      format_str = "RGB";
+    }
+    else if (IsEqualGUID(format, gss::video::camera::formats::RGBA_FORMAT))
+    {
+      format_str = "RGBA";
+    }
+    else if (IsEqualGUID(format, gss::video::camera::formats::MJPG_FORMAT))
+    {
+      format_str = "MJPG";
+    }
+    else
+    {
+      format_str = "UYVY";
+    }
+
+    return format_str;
+  }
+#elif defined(__linux__) || defined(__unix__)
+  inline std::string get_video_format_str(const gss::video::camera::types::VideoFormat format)
+  {
+    std::string format_str;
+
+    switch (format)
+    {
+      case gss::video::camera::formats::UYVY_FORMAT:
+      default:
+        format_str = "UYVY";
+        break;
+    }
+
+    return format_str;
+  }
+#endif
 }
