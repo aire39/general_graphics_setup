@@ -91,23 +91,23 @@ namespace gss::video::camera::platform {
           if ((isInitialized = WinCamera::Configuration() || ignoreFailFormat))
           {
             isCapturing = true;
-            spdlog::info("Starting capture...");
+            logging::info("Starting capture...");
             captureThread = cthread("cap-camera", "capture frame data", &WinCamera::CaptureFramesThread, this);
             sampleThread = cthread("samp-camera", "capture frame data", &WinCamera::SampleFramesThread, this);
           }
           else
           {
-            spdlog::warn("Video device is not initialized");
+            logging::warn("Video device is not initialized");
           }
         }
         else
         {
-          spdlog::warn("Failed to allocate buffers. cannot start camera!");
+          logging::warn("Failed to allocate buffers. cannot start camera!");
         }
       }
       else
       {
-        spdlog::info("Capture already started!");
+        logging::info("Capture already started!");
       }
     }
   }
@@ -177,7 +177,7 @@ namespace gss::video::camera::platform {
     HRESULT hr = MFShutdown();
     if (FAILED(hr))
     {
-      spdlog::error("Failed to shutdown Media Foundation For Video Capture");
+      logging::error("Failed to shutdown Media Foundation For Video Capture");
     }
 
     isPause = false;
@@ -356,49 +356,49 @@ namespace gss::video::camera::platform {
     HRESULT hr = MFStartup(MF_VERSION);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to initialize MFStartup");
+      logging::error("Failed to initialize MFStartup");
       return false;
     }
 
     hr = MFCreateAttributes(&attributes, 1);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to create attributes");
+      logging::error("Failed to create attributes");
       return false;
     }
 
     hr = attributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to set VIDCAP_GUID");
+      logging::error("Failed to set VIDCAP_GUID");
       return false;
     }
 
     hr = MFEnumDeviceSources(attributes, &devices, &numSources);
     if (FAILED(hr) || numSources == 0)
     {
-      spdlog::error("Failed to enumerate devices sources");
+      logging::error("Failed to enumerate devices sources");
       return false;
     }
 
     hr = devices[captureDevice]->ActivateObject(__uuidof(IMFMediaSource), reinterpret_cast<void **>(&source));
     if (FAILED(hr))
     {
-      spdlog::error("Failed to activate media source");
+      logging::error("Failed to activate media source");
       return false;
     }
 
     hr = MFCreateSourceReaderFromMediaSource(source, attributes, &reader);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to read source from media source");
+      logging::error("Failed to read source from media source");
       return false;
     }
 
     hr = reader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_FIRST_VIDEO_STREAM), TRUE);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to set stream selection");
+      logging::error("Failed to set stream selection");
       return false;
     }
 
@@ -406,21 +406,21 @@ namespace gss::video::camera::platform {
     hr = MFCreateMediaType(&media_type);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to create media type");
+      logging::error("Failed to create media type");
       return false;
     }
 
     hr = media_type->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to set major type");
+      logging::error("Failed to set major type");
       return false;
     }
 
     hr = media_type->SetGUID(MF_MT_SUBTYPE, videoFormat);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to set subtype of video format");
+      logging::error("Failed to set subtype of video format");
       return false;
     }
 
@@ -428,54 +428,54 @@ namespace gss::video::camera::platform {
     hr = attributes->SetUINT32(MF_LOW_LATENCY, low_latency);
     if (FAILED(hr))
     {
-      spdlog::info("Failed to set low latency mode");
+      logging::info("Failed to set low latency mode");
       return false;
     }
 
     hr = attributes->SetUINT32(MF_READWRITE_DISABLE_CONVERTERS, TRUE);
     if (FAILED(hr))
     {
-      spdlog::info("Failed to disable converters");
+      logging::info("Failed to disable converters");
       return false;
     }
 
     hr = attributes->SetUINT32(MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, FALSE);
     if (FAILED(hr))
     {
-      spdlog::info("Failed to disable video processing");
+      logging::info("Failed to disable video processing");
       return false;
     }
 
     hr = MFSetAttributeRatio(media_type, MF_MT_FRAME_RATE, fps.first, fps.second);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to get native media type");
+      logging::error("Failed to get native media type");
       return false;
     }
 
     hr = MFSetAttributeSize(media_type, MF_MT_FRAME_SIZE, width, height);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to get native media type");
+      logging::error("Failed to get native media type");
       return false;
     }
 
     hr = reader->SetCurrentMediaType(static_cast<DWORD>(MF_SOURCE_READER_FIRST_VIDEO_STREAM), nullptr, media_type);
     if (FAILED(hr))
     {
-      spdlog::warn("Failed to source video stream. Will fallback to closest meda type!");
+      logging::warn("Failed to source video stream. Will fallback to closest meda type!");
       return false;
     }
 
     media_type->Release();
-    spdlog::info("Camera device is initialized");
+    logging::info("Camera device is initialized");
 
     return true;
   }
 
   void WinCamera::CaptureFramesThread()
   {
-    spdlog::info("Capture frames!");
+    logging::info("Capture frames!");
 
     double filtered_timestamp = 0;
     double previous_filtered_timestamp = 0;
@@ -552,7 +552,7 @@ namespace gss::video::camera::platform {
         HRESULT hr = sample->ConvertToContiguousBuffer(buffer.GetAddressOf());
         if (FAILED(hr))
         {
-          spdlog::warn("Failed to convert sample");
+          logging::warn("Failed to convert sample");
           buffer.Reset();
           failCount++;
           continue;
@@ -579,7 +579,7 @@ namespace gss::video::camera::platform {
               hr = buffer->Lock(&buffer_data, &max_length, &current_length);
               if (FAILED(hr))
               {
-                spdlog::warn("Failed to lock buffer");
+                logging::warn("Failed to lock buffer");
                 buffer.Reset();
                 failCount++;
                 captureFrameQueue.push(capture_frame);
@@ -593,12 +593,12 @@ namespace gss::video::camera::platform {
               }
               else
               {
-                spdlog::warn("Failed to copy buffer");
+                logging::warn("Failed to copy buffer");
 
                 hr = buffer->Unlock();
                 if (FAILED(hr))
                 {
-                  spdlog::warn("Failed to unlock buffer");
+                  logging::warn("Failed to unlock buffer");
                 }
 
                 captureFrameQueue.push(capture_frame);
@@ -658,7 +658,7 @@ namespace gss::video::camera::platform {
     isInitialized = false;
     frameCount = 0;
 
-    spdlog::info("Finished capturing");
+    logging::info("Finished capturing");
     std::this_thread::sleep_for(std::chrono::milliseconds(100u));
   }
 
@@ -680,7 +680,7 @@ namespace gss::video::camera::platform {
 
       if (FAILED(hr))
       {
-        spdlog::warn("Unable to query video frame sample");
+        logging::warn("Unable to query video frame sample");
       }
 
       if (sample && SUCCEEDED(hr))
@@ -709,28 +709,28 @@ namespace gss::video::camera::platform {
     HRESULT hr = MFStartup(MF_VERSION);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to initialize MFStartup");
+      logging::error("Failed to initialize MFStartup");
       return -1;
     }
 
     hr = MFCreateAttributes(&m_attributes, 1);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to create attributes");
+      logging::error("Failed to create attributes");
       return -1;
     }
 
     hr = m_attributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to set VIDCAP_GUID");
+      logging::error("Failed to set VIDCAP_GUID");
       return -1;
     }
 
     hr = MFEnumDeviceSources(m_attributes, &m_devices, &num_devices);
     if (FAILED(hr) || num_devices == 0)
     {
-      spdlog::error("Failed to enumerate devices sources");
+      logging::error("Failed to enumerate devices sources");
       return -1;
     }
 
@@ -774,7 +774,7 @@ namespace gss::video::camera::platform {
 
       if (SUCCEEDED(hr_friendly) && SUCCEEDED(hr_device_path))
       {
-        spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_cyan), "Device Name: {} | Device Path: {}", info_friendly_name, utility::escape_control_chars(info_device_path)));
+        logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_cyan), "Device Name: {} | Device Path: {}", info_friendly_name, utility::escape_control_chars(info_device_path)));
       }
 
     }
@@ -802,7 +802,7 @@ namespace gss::video::camera::platform {
     hr = MFShutdown();
     if (FAILED(hr))
     {
-      spdlog::error("Failed to shutdown Media Foundation For Video Capture");
+      logging::error("Failed to shutdown Media Foundation For Video Capture");
     }
 
     return index;
@@ -819,28 +819,28 @@ namespace gss::video::camera::platform {
     HRESULT hr = MFStartup(MF_VERSION);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to initialize MFStartup");
+      logging::error("Failed to initialize MFStartup");
       return "";
     }
 
     hr = MFCreateAttributes(&m_attributes, 1);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to create attributes");
+      logging::error("Failed to create attributes");
       return "";
     }
 
     hr = m_attributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
     if (FAILED(hr))
     {
-      spdlog::error("Failed to set VIDCAP_GUID");
+      logging::error("Failed to set VIDCAP_GUID");
       return "";
     }
 
     hr = MFEnumDeviceSources(m_attributes, &m_devices, &num_devices);
     if (FAILED(hr) || num_devices == 0)
     {
-      spdlog::error("Failed to enumerate devices sources");
+      logging::error("Failed to enumerate devices sources");
       return "";
     }
 
@@ -884,7 +884,7 @@ namespace gss::video::camera::platform {
 
       if (SUCCEEDED(hr_friendly) && SUCCEEDED(hr_device_path))
       {
-        spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_cyan), "Device Name: {} | Device Path: {}", info_friendly_name, utility::escape_control_chars(info_device_path)));
+        logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_cyan), "Device Name: {} | Device Path: {}", info_friendly_name, utility::escape_control_chars(info_device_path)));
       }
     }
 
@@ -911,7 +911,7 @@ namespace gss::video::camera::platform {
     hr = MFShutdown();
     if (FAILED(hr))
     {
-      spdlog::error("Failed to shutdown Media Foundation For Video Capture");
+      logging::error("Failed to shutdown Media Foundation For Video Capture");
     }
 
     return device_path;

@@ -10,7 +10,7 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 #include <SDL3/SDL.h>
 
-#include <spdlog/spdlog.h>
+#include "common/support/logging.h"
 #include <spdlog/fmt/bundled/color.h>
 
 #include <glm/glm.hpp>
@@ -60,7 +60,7 @@ int32_t main(int32_t argc, char*argv[])
 
   if (!graphics_window.IsWindowInitialized())
   {
-    spdlog::error("Unable to initialize a window!!!");
+    logging::error("Unable to initialize a window!!!");
     return 0;
   }
 
@@ -120,7 +120,7 @@ int32_t main(int32_t argc, char*argv[])
     SetupShaderParams(shader_program);
 
     //sprite.SetPosition({100.0f * std::cos(location_time), 100.0f * std::sin(location_time)});
-    //spdlog::info("time: {}", location_time);
+    //logging::info("time: {}", location_time);
 
     auto model_matrix = glm::mat4(1.0f);
     model_matrix = glm::translate(model_matrix, sprite.GetPosition());
@@ -178,7 +178,7 @@ bool WindowResize(void * data, SDL_Event * event)
     const SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
     if (window == static_cast<SDL_Window*>(data))
     {
-      spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
+      logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
       glViewport(0, 0, event->window.data1, event->window.data2);
       event_handled = true;
     }

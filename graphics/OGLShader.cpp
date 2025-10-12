@@ -2,7 +2,7 @@
 
 #include <magic_enum/magic_enum.hpp>
 
-#include <spdlog/spdlog.h>
+#include "common/support/logging.h"
 #include <spdlog/fmt/bundled/color.h>
 
 [[maybe_unused]] OGLShader::OGLShader([[maybe_unused]]const std::string& file_path)
@@ -46,19 +46,19 @@
       }
       else
       {
-        spdlog::error(fmt::format(fmt::fg(fmt::terminal_color::bright_red), "No valid shader code! Shader code is empty!"));
+        logging::error(fmt::format(fmt::fg(fmt::terminal_color::bright_red), "No valid shader code! Shader code is empty!"));
       }
     }
     else
     {
-      spdlog::error(fmt::format(fmt::fg(fmt::terminal_color::bright_red), "No valid shader file extension ({}) was found!", file_extension));
+      logging::error(fmt::format(fmt::fg(fmt::terminal_color::bright_red), "No valid shader file extension ({}) was found!", file_extension));
     }
 
     file.close();
   }
   else
   {
-    spdlog::error(fmt::format(fmt::fg(fmt::terminal_color::bright_red), "No valid file ({}) for shader opened!", file_path));
+    logging::error(fmt::format(fmt::fg(fmt::terminal_color::bright_red), "No valid file ({}) for shader opened!", file_path));
   }
 }
 
@@ -75,7 +75,7 @@
   }
   else
   {
-    spdlog::error(fmt::format(fmt::fg(fmt::terminal_color::bright_red), "No valid shader ({}) code! Shader code is empty!", magic_enum::enum_name(shader_type)));
+    logging::error(fmt::format(fmt::fg(fmt::terminal_color::bright_red), "No valid shader ({}) code! Shader code is empty!", magic_enum::enum_name(shader_type)));
   }
 }
 
@@ -117,7 +117,7 @@ void OGLShader::Init(const std::string& shader_code)
 
     case ShaderType::NONE:
     default:
-     spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "No such shader type!"));
+     logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "No such shader type!"));
      valid_shader_type = false;
       break;
   }
@@ -125,7 +125,7 @@ void OGLShader::Init(const std::string& shader_code)
   if (valid_shader_type)
   {
     const auto shader_type_name = magic_enum::enum_name(shaderType);
-    spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "Created Shader {} ({})", shader_type_name.data(), handle));
+    logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_blue), "Created Shader {} ({})", shader_type_name.data(), handle));
 
     const char * sc_str = shader_code.c_str();
     glShaderSource(handle, 1, &sc_str, nullptr);
@@ -145,11 +145,11 @@ bool OGLShader::Compile()
     glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &max_length);
     glGetShaderInfoLog(handle, max_length, &max_length, compileStatusLog);
 
-    spdlog::error(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Shader compile error:\n{}", compileStatusLog));
+    logging::error(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Shader compile error:\n{}", compileStatusLog));
   }
   else
   {
-    spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_green), "Compiled successfully!"));
+    logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_green), "Compiled successfully!"));
   }
 
   return (compile_status != 0);

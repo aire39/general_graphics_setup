@@ -78,7 +78,7 @@ int32_t main(int32_t argc, char*argv[])
 
   if (!graphics_window.IsWindowInitialized())
   {
-    spdlog::error("Unable to initialize a window!!!");
+    logging::error("Unable to initialize a window!!!");
     return 0;
   }
 
@@ -215,7 +215,7 @@ bool WindowResize(void * data, SDL_Event * event)
     const SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
     if (window == static_cast<SDL_Window*>(data))
     {
-      spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
+      logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
       glViewport(0, 0, event->window.data1, event->window.data2);
       event_handled = true;
     }

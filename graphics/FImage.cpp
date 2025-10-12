@@ -164,7 +164,7 @@ void FImage::SetPixel(const int32_t image_id, const int32_t x, const int32_t y, 
     }
     else
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Pixel position to set is out of bounds!"));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Pixel position to set is out of bounds!"));
     }
 }
 
@@ -208,7 +208,7 @@ glm::u8vec4 FImage::GetPixel(const int32_t image_id, const int32_t x, const int3
     }
     else
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Pixel position to get is out of bounds!"));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Pixel position to get is out of bounds!"));
     }
 
     return pixel;
@@ -268,7 +268,7 @@ SDL_Surface * FImage::GetImage(const int32_t image_id) const
     }
     else
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "image data does not exists: out of bounds!"));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "image data does not exists: out of bounds!"));
     }
 
     return image;
@@ -288,12 +288,12 @@ void FImage::ChangeFilterName(const std::string &filter_name, const std::string 
         }
         else
         {
-            spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filter name \"{}\" already exists. Unable to change name", new_filter_name));
+            logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filter name \"{}\" already exists. Unable to change name", new_filter_name));
         }
     }
     catch (const std::out_of_range &e)
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filter doesn't exist. Unable to change name -> exception msg: {}", e.what()));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filter doesn't exist. Unable to change name -> exception msg: {}", e.what()));
     }
 }
 
@@ -322,12 +322,12 @@ void FImage::ChangeFilterName(const int32_t filter_id, const std::string &new_fi
 
     if (!found_filter)
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filter doesn't exist. Unable to change name"));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filter doesn't exist. Unable to change name"));
     }
 
     if (!found_unique_name)
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filter name \"{}\" already exists. Unable to change name", new_filter_name));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filter name \"{}\" already exists. Unable to change name", new_filter_name));
     }
 }
 
@@ -359,7 +359,7 @@ void FImage::ViewTexture(const int32_t filter_id)
     }
     else
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filtered texture doesn't exist!"));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filtered texture doesn't exist!"));
     }
 }
 
@@ -378,7 +378,7 @@ void FImage::ViewTexture(const std::string& filter_name)
     }
     catch (const std::exception& e)
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filtered texture doesn't exist, exception msg: {}", e.what()));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Filtered texture doesn't exist, exception msg: {}", e.what()));
     }
 }
 
@@ -498,7 +498,7 @@ void FImage::Remove(const std::string& image_name)
     }
     catch (const std::exception& e)
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to find filtered image '{}', exception msg: {}", image_name, e.what()));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to find filtered image '{}', exception msg: {}", image_name, e.what()));
     }
 }
 
@@ -531,7 +531,7 @@ std::shared_ptr<SDL_Surface> FImage::Extract(const std::string& image_name)
     }
     catch (const std::exception& e)
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to find filtered image '{}', exception msg: {}", image_name, e.what()));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to find filtered image '{}', exception msg: {}", image_name, e.what()));
     }
 
     return extracted_image;
@@ -751,7 +751,7 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
         }
         else
         {
-            spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Not a valid image id"));
+            logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Not a valid image id"));
         }
     }
 
@@ -823,7 +823,7 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
         }
         else
         {
-            spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "invalid image id filter"));
+            logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "invalid image id filter"));
         }
 
         if (prev_view_layer != currentViewLayer && save_filter)
@@ -833,7 +833,7 @@ int32_t FImage::privProcessFilter(const int32_t& image_id, const filter::types::
     }
     else
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "No data to apply filter!"));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "No data to apply filter!"));
     }
 
     return valid_image_id;
@@ -850,7 +850,7 @@ int32_t FImage::privProcessFilter(const std::string& filter_name, const filter::
     }
     catch (const std::exception& e)
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to find filtered image, exception msg: {}", e.what()));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to find filtered image, exception msg: {}", e.what()));
     }
 
     return valid_image_id;
@@ -867,13 +867,13 @@ int32_t FImage::privProcessFilter(const std::string& filter_name, const std::str
     }
     catch (const std::exception& e)
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to find filtered image, exception msg: {}", e.what()));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to find filtered image, exception msg: {}", e.what()));
     }
 
     const bool existing_image_id = filteredImageDataID.contains(filter_name_to);
     if (existing_image_id)
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "New filter name must be unique, {} already exists!", filter_name_to));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "New filter name must be unique, {} already exists!", filter_name_to));
     }
 
     if (image_id >= 0 && !existing_image_id)
@@ -884,7 +884,7 @@ int32_t FImage::privProcessFilter(const std::string& filter_name, const std::str
     }
     else
     {
-        spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to apply filtered image"));
+        logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to apply filtered image"));
     }
 
     return valid_image_id;

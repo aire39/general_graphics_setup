@@ -2,7 +2,7 @@
 
 #include "GraphicsWindow.h"
 
-#include <spdlog/spdlog.h>
+#include "common/support/logging.h"
 #include <spdlog/fmt/bundled/color.h>
 
 #include "SDL3/SDL_opengl.h"
@@ -34,7 +34,7 @@ OpenGLContext::OpenGLContext(GraphicsWindow & graphics_window, const int32_t ogl
 
 OpenGLContext::~OpenGLContext()
 {
-  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_magenta), "Destroy OpenGLContext!"));
+  logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_magenta), "Destroy OpenGLContext!"));
   SDL_GL_DestroyContext(context);
 }
 

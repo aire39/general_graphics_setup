@@ -1,7 +1,8 @@
 #pragma once
 
 #include "CameraFormats.h"
-#include "spdlog/spdlog.h"
+#include "common/support/logging.h"
+#include <spdlog/fmt/bundled/color.h>
 
 #include <string>
 #include <fstream>
@@ -36,7 +37,7 @@ namespace gss::video::camera::helpers {
     catch (const std::invalid_argument& e)
     {
       index = 0;
-      spdlog::warn("Could not determine format selection. Will default to UYVY --> {} failed to convert string to integer: {}", e.what(), str_index);
+      logging::warn("Could not determine format selection. Will default to UYVY --> {} failed to convert string to integer: {}", e.what(), str_index);
     }
 
     gss::video::camera::types::VideoFormat format;

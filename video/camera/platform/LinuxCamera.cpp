@@ -2,7 +2,8 @@
 #include "graphics/FImage.h"
 
 #include "SDL3/SDL_surface.h"
-#include "spdlog/spdlog.h"
+#include "common/support/logging.h"
+#include <spdlog/fmt/bundled/color.h>
 
 #include "common/support/utility.h"
 #include "video/camera/common/CameraFormats.h"
@@ -82,7 +83,7 @@ namespace gss::video::camera::platform {
     captureDevice = utility::parse_number_from_suffix(sv_device_name);
 
     fd = open(device_path.c_str(), O_RDWR | O_NONBLOCK);
-    spdlog::info("Opened device: {} ({})", device_path, fd);
+    logging::info("Opened device: {} ({})", device_path, fd);
   }
 
   LinuxCamera::~LinuxCamera()
@@ -102,7 +103,7 @@ namespace gss::video::camera::platform {
     {
       isPause = false;
       fd = open(devicePath.c_str(), O_RDWR | O_NONBLOCK);
-      spdlog::info("Opened device: {} ({})", devicePath, fd);
+      logging::info("Opened device: {} ({})", devicePath, fd);
     }
 
     if (fd >= 0)
@@ -122,7 +123,7 @@ namespace gss::video::camera::platform {
             v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             if (!xioctl(fd, VIDIOC_STREAMON, &type))
             {
-              spdlog::error("VIDIOC_STREAMON failed: {}", strerror(errno));
+              logging::error("VIDIOC_STREAMON failed: {}", strerror(errno));
               return;
             }
 
@@ -132,18 +133,18 @@ namespace gss::video::camera::platform {
           }
           else
           {
-            spdlog::warn("Video device is not initialized");
+            logging::warn("Video device is not initialized");
           }
         }
         else
         {
-          spdlog::error("Failed to allocate user buffers");
+          logging::error("Failed to allocate user buffers");
         }
       }
     }
     else
     {
-      spdlog::warn("Unable to open device");
+      logging::warn("Unable to open device");
     }
   }
 
@@ -176,7 +177,7 @@ namespace gss::video::camera::platform {
 
         if (e != EAGAIN)
         {
-          spdlog::warn("Unable to dequeue buffer for cleanup: ({}) {}", 0, strerror(e), e);
+          logging::warn("Unable to dequeue buffer for cleanup: ({}) {}", 0, strerror(e), e);
           break;
         }
 
@@ -186,7 +187,7 @@ namespace gss::video::camera::platform {
       v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       if (!xioctl(fd, VIDIOC_STREAMOFF, &type))
       {
-        spdlog::error("VIDIOC_STREAMOFF failed: {}", strerror(errno));
+        logging::error("VIDIOC_STREAMOFF failed: {}", strerror(errno));
       }
 
       std::this_thread::sleep_for(std::chrono::milliseconds(100u));
@@ -195,7 +196,7 @@ namespace gss::video::camera::platform {
       {
         if (munmap(buffers[i].first, buffers[i].second) < 0)
         {
-          spdlog::error("unable unmap buffer {}", i);
+          logging::error("unable unmap buffer {}", i);
         }
       }
 
@@ -206,7 +207,7 @@ namespace gss::video::camera::platform {
       req.memory = V4L2_MEMORY_MMAP;
       if (!xioctl(fd, VIDIOC_REQBUFS, &req))
       {
-        spdlog::warn("Failed to zero requested buffers");
+        logging::warn("Failed to zero requested buffers");
       }
 
       buffers.clear();
@@ -403,7 +404,7 @@ namespace gss::video::camera::platform {
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (!xioctl(fd, VIDIOC_G_FMT, &fmt))
     {
-      spdlog::warn("Failed to get capture format");
+      logging::warn("Failed to get capture format");
       return false;
     }
 
@@ -416,7 +417,7 @@ namespace gss::video::camera::platform {
 
     if (!xioctl(fd, VIDIOC_S_FMT, &fmt))
     {
-      spdlog::warn("Failed to set capture format");
+      logging::warn("Failed to set capture format");
       return false;
     }
 
@@ -430,7 +431,7 @@ namespace gss::video::camera::platform {
 
     if (!xioctl(fd, VIDIOC_S_PARM, &streamparm))
     {
-      spdlog::warn("Failed to set video frame rate");
+      logging::warn("Failed to set video frame rate");
       return false;
     }
 
@@ -440,11 +441,11 @@ namespace gss::video::camera::platform {
     req.memory = V4L2_MEMORY_MMAP;
     if (!xioctl(fd, VIDIOC_REQBUFS, &req))
     {
-      spdlog::warn("Failed to request buffers");
+      logging::warn("Failed to request buffers");
       return false;
     }
 
-    spdlog::info("requested buffer size: {}", req.count);
+    logging::info("requested buffer size: {}", req.count);
 
     // initialize/store/queue buffers
 
@@ -459,14 +460,14 @@ namespace gss::video::camera::platform {
 
       if (!xioctl(fd, VIDIOC_QUERYBUF, &buf))
       {
-        spdlog::warn("Failed to query buffer");
+        logging::warn("Failed to query buffer");
         return false;
       }
 
       auto map_buffer = mmap(nullptr, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
       if (map_buffer == MAP_FAILED)
       {
-        spdlog::warn("Failed to map buffer");
+        logging::warn("Failed to map buffer");
         return false;
       }
 
@@ -474,7 +475,7 @@ namespace gss::video::camera::platform {
 
       if (!xioctl(fd, VIDIOC_QBUF, &buf))
       {
-        spdlog::warn("Failed to queue buffer");
+        logging::warn("Failed to queue buffer");
         return false;
       }
 
@@ -522,7 +523,7 @@ namespace gss::video::camera::platform {
           if (error_value != EAGAIN)
           {
             failCount++;
-            spdlog::warn("Failed to dequeue buffer ({})", strerror(error_value));
+            logging::warn("Failed to dequeue buffer ({})", strerror(error_value));
           }
 
           continue;
@@ -544,7 +545,7 @@ namespace gss::video::camera::platform {
           }
         }
 
-        spdlog::info("frame {} dequeued", buf_dq.index);
+        logging::info("frame {} dequeued", buf_dq.index);
       }
       else
       {
@@ -552,7 +553,7 @@ namespace gss::video::camera::platform {
         {
           auto stop_capture_thread = std::thread([this](){StopCapture();});
           stop_capture_thread.detach();
-          spdlog::warn("Failed trying to dequeue frames. Stopping camera!");
+          logging::warn("Failed trying to dequeue frames. Stopping camera!");
         }
 
         skipFrames++;
@@ -569,7 +570,7 @@ namespace gss::video::camera::platform {
 
       const uint8_t* buffer = buffers[buf_dq.index].first;
 
-      spdlog::info("buffer index: {}", buf_dq.index);
+      logging::info("buffer index: {}", buf_dq.index);
 
       // copy data to FImage
       std::shared_ptr<FImage> frame(frames[buf_dq.index].get(), [this, buffer_index=buf_dq.index](FImage*) {
@@ -586,7 +587,7 @@ namespace gss::video::camera::platform {
       }
       else
       {
-        spdlog::warn("Failed to copy buffer");
+        logging::warn("Failed to copy buffer");
         frame.reset(); // will queue buffer if this copy fails
         failCount++;
         continue;
@@ -599,7 +600,7 @@ namespace gss::video::camera::platform {
         readyFrameQueue.push(frame);
       }
 
-      spdlog::info("frame: {}", frameCount);
+      logging::info("frame: {}", frameCount);
     }
 
     {
@@ -655,13 +656,13 @@ namespace gss::video::camera::platform {
 
       if (!xioctl(fd, VIDIOC_QUERYBUF, &buf))
       {
-        spdlog::warn("Failed to query buffer: {} ({})", buf.index, strerror(errno));
+        logging::warn("Failed to query buffer: {} ({})", buf.index, strerror(errno));
         query_success = false;
       }
 
       if (query_success && !xioctl(fd, VIDIOC_QBUF, &buf))
       {
-        spdlog::warn("Failed to enqueue buffer: {}({}) ({})", buf.index, buffer_index, strerror(errno));
+        logging::warn("Failed to enqueue buffer: {}({}) ({})", buf.index, buffer_index, strerror(errno));
         success = false;
       }
 
@@ -669,7 +670,7 @@ namespace gss::video::camera::platform {
       {
         std::lock_guard lock(mutexQueueTrack);
         queuedBuffers++;
-        spdlog::info("enqueued buffer ({})", queuedBuffers);
+        logging::info("enqueued buffer ({})", queuedBuffers);
       }
     }
 

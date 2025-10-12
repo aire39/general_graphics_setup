@@ -58,7 +58,7 @@ int32_t main(int32_t argc, char*argv[])
 
   if (!graphics_window.IsWindowInitialized())
   {
-    spdlog::error("Unable to initialize a window!!!");
+    logging::error("Unable to initialize a window!!!");
     return 0;
   }
 
@@ -102,14 +102,14 @@ int32_t main(int32_t argc, char*argv[])
   {
     name_list_0 += "[" + name + " (" + std::to_string(index) + ")] ";
   }
-  spdlog::info("processed_image_names image names: {}", name_list_0);
+  logging::info("processed_image_names image names: {}", name_list_0);
 
   sprite.ProcessFilter("change", "test", filter::functions::cpu::vectorize::convert_to_grayscale);
 
   std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
   double elapsed_time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000.0;
-  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "{}({}) Filter process (par_unseq) elapsed time: {}ms", sprite.GetName(), sprite.GetID(), elapsed_time));
+  logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "{}({}) Filter process (par_unseq) elapsed time: {}ms", sprite.GetName(), sprite.GetID(), elapsed_time));
 
   std::vector<std::pair<std::string, int>> processed_image_names = sprite.GetProcessedImageNames();
   std::string name_list;
@@ -117,7 +117,7 @@ int32_t main(int32_t argc, char*argv[])
   {
     name_list += "[" + name + " (" + std::to_string(index) + ")] ";
   }
-  spdlog::info("processed_image_names image names: {} --> current view: {}", name_list, sprite.GetCurrentImageFilterID());
+  logging::info("processed_image_names image names: {} --> current view: {}", name_list, sprite.GetCurrentImageFilterID());
 
   auto image = sprite.Extract(5);
   image.reset();
@@ -128,7 +128,7 @@ int32_t main(int32_t argc, char*argv[])
   {
     name_list += "[" + name + " (" + std::to_string(index) + ")] ";
   }
-  spdlog::info("processed_image_names image names: {}", name_list);
+  logging::info("processed_image_names image names: {}", name_list);
 
   // initialize imGUI
 
@@ -188,12 +188,12 @@ int32_t main(int32_t argc, char*argv[])
       if (!switch_layer)
       {
         sprite.ViewTexture(sprite.GetBaseImageFilterID());
-        spdlog::info("switch to base layer!");
+        logging::info("switch to base layer!");
       }
       else
       {
         sprite.ViewTexture(sprite.GetFinalImageFilterID());
-        spdlog::info("switch to other layer!");
+        logging::info("switch to other layer!");
       }
 
       switch_layer ^= true;
@@ -249,7 +249,7 @@ bool WindowResize(void * data, SDL_Event * event)
     const SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
     if (window == static_cast<SDL_Window*>(data))
     {
-      spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
+      logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
       event_handled = true;
     }
   }
@@ -273,7 +273,7 @@ void SetConsoleMode()
 
 void PrintStartMessage()
 {
-  spdlog::info(
+  logging::info(
     fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold
                    ,"Starting: Hello, Graphics World!"));
 }
