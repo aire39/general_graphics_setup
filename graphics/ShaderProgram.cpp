@@ -2,7 +2,7 @@
 
 #include <ranges>
 
-#include <spdlog/spdlog.h>
+#include "common/support/logging.h"
 #include <spdlog/fmt/bundled/color.h>
 
 #include <magic_enum/magic_enum.hpp>
@@ -47,7 +47,7 @@ void ShaderProgram::AttachShader(const OGLShader & shader)
   }
   else
   {
-    spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "program shader ({}): may be missing vertex and/or fragment shaders!", handle));
+    logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "program shader ({}): may be missing vertex and/or fragment shaders!", handle));
   }
 }
 
@@ -71,7 +71,7 @@ void ShaderProgram::AttachShader(std::span<const OGLShader> shader_list)
   }
   else
   {
-    spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "program shader ({}): may be missing vertex and/or fragment shaders!", handle));
+    logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "program shader ({}): may be missing vertex and/or fragment shaders!", handle));
   }
 }
 
@@ -95,7 +95,7 @@ void ShaderProgram::AttachShader(std::vector<std::reference_wrapper<const OGLSha
   }
   else
   {
-    spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "program shader ({}): may be missing vertex and/or fragment shaders!", handle));
+    logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "program shader ({}): may be missing vertex and/or fragment shaders!", handle));
   }
 }
 
@@ -179,7 +179,7 @@ void ShaderProgram::LinkShaders()
 
     glGetProgramInfoLog(handle, max_length, &max_length, programStatusLog);
 
-    spdlog::error(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "shader compile error:\n{}", programStatusLog));
+    logging::error(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "shader compile error:\n{}", programStatusLog));
   }
   else
   {
@@ -190,6 +190,6 @@ void ShaderProgram::LinkShaders()
     }
     shader_type_list_str[shader_type_list_str.size()-1] = '\0';
 
-    spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_green), "program shader ({}): [{}] linked successfully!", handle, shader_type_list_str));
+    logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_green), "program shader ({}): [{}] linked successfully!", handle, shader_type_list_str));
   }
 }

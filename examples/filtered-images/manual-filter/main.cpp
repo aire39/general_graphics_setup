@@ -58,7 +58,7 @@ int32_t main(int32_t argc, char*argv[])
 
   if (!graphics_window.IsWindowInitialized())
   {
-    spdlog::error("Unable to initialize a window!!!");
+    logging::error("Unable to initialize a window!!!");
     return 0;
   }
 
@@ -139,7 +139,7 @@ int32_t main(int32_t argc, char*argv[])
   std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
 
   double elapsed_time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000.0;
-  spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "{}({}) Filter process (par_unseq) elapsed time: {}ms", sprite.GetName(), sprite.GetID(), elapsed_time));
+  logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "{}({}) Filter process (par_unseq) elapsed time: {}ms", sprite.GetName(), sprite.GetID(), elapsed_time));
 
   // initialize imGUI
 
@@ -199,12 +199,12 @@ int32_t main(int32_t argc, char*argv[])
 
       if (!switch_layer)
       {
-        spdlog::info("switch to base layer!");
+        logging::info("switch to base layer!");
         sprite.ViewTexture(sprite.GetBaseImageFilterID());
       }
       else
       {
-        spdlog::info("switch to other layer!");
+        logging::info("switch to other layer!");
       }
     }
 
@@ -263,7 +263,7 @@ bool WindowResize(void * data, SDL_Event * event)
     const SDL_Window* window = SDL_GetWindowFromID(event->window.windowID);
     if (window == static_cast<SDL_Window*>(data))
     {
-      spdlog::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
+      logging::info(fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold, "window resizing..."));
       event_handled = true;
     }
   }
@@ -287,7 +287,7 @@ void SetConsoleMode()
 
 void PrintStartMessage()
 {
-  spdlog::info(
+  logging::info(
     fmt::format(fmt::fg(fmt::terminal_color::bright_white) | fmt::emphasis::bold
                    ,"Starting: Hello, Graphics World!"));
 }

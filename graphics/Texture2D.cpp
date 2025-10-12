@@ -1,6 +1,6 @@
 #include "Texture2D.h"
 
-#include "spdlog/spdlog.h"
+#include "common/support/logging.h"
 #include <spdlog/fmt/bundled/color.h>
 
 Texture2D::Texture2D()
@@ -79,7 +79,7 @@ bool Texture2D::Copy(const Texture2D &copy_texture, const GLint src_level, const
   const GLenum error = glGetError();
   if (error != GL_NO_ERROR)
   {
-    spdlog::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to copy texture {}", copy_texture.GetHandle()));
+    logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Unable to copy texture {}", copy_texture.GetHandle()));
   }
 
   return (error == GL_NO_ERROR);

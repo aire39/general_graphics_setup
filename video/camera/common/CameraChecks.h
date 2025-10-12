@@ -59,7 +59,7 @@ namespace gss::camera::checks {
           }
       }
       catch (const std::exception& ex) {
-          spdlog::error("Error resolving sysfs path: {}" ,ex.what());
+          logging::error("Error resolving sysfs path: {}" ,ex.what());
       }
       return {"", ""};
   }
@@ -74,7 +74,7 @@ namespace gss::camera::checks {
     int usb_fd = open(dev_path.c_str(), O_WRONLY);
     if (usb_fd < 0)
     {
-        spdlog::error("Failed to open USB device node {}: {}", dev_path, strerror(errno));
+        logging::error("Failed to open USB device node {}: {}", dev_path, strerror(errno));
         success = false;
     }
 
@@ -83,12 +83,12 @@ namespace gss::camera::checks {
       int rc = ioctl(usb_fd, USBDEVFS_RESET, 0);
       if (rc < 0)
       {
-          spdlog::error("USBDEVFS_RESET failed on {}: {}", dev_path, strerror(errno));
+          logging::error("USBDEVFS_RESET failed on {}: {}", dev_path, strerror(errno));
           success = false;
       }
       else
       {
-          spdlog::info("USB device {} reset successfully", dev_path);
+          logging::info("USB device {} reset successfully", dev_path);
       }
     }
 
