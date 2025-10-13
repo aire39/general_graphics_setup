@@ -22,12 +22,12 @@
 #include <CLI/CLI.hpp>
 
 #include "GraphicsWindow.h"
-#include "graphics/OGLShader.h"
-#include "graphics/ShaderProgram.h"
-#include "graphics/FImage.h"
+#include "graphics/shaders/OGLShader.h"
+#include "graphics/shaders/ShaderProgram.h"
+#include "graphics/images/FImage.h"
 
-#include "graphics/PrebuiltShaderSources.h"
-#include "graphics/FilterTypes.h"
+#include "graphics/shaders/PrebuiltShaderSources.h"
+#include "graphics/filters/FilterTypes.h"
 #include "filters/VaryingFilters.h"
 #include "gui/VaryingBitsMenu.h"
 

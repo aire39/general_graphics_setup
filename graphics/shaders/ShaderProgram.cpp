@@ -7,7 +7,7 @@
 
 #include <magic_enum/magic_enum.hpp>
 
-#include "Texture2D.h"
+#include "../images/Texture2D.h"
 
 ShaderProgram::ShaderProgram()
 {

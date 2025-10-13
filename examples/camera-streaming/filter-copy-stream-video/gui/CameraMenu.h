@@ -4,7 +4,7 @@
 #include <array>
 #include <string>
 #include <utility>
-#include "graphics/Filters.h"
+#include "graphics/filters/Filters.h"
 
 class FImage;
 namespace gss::video::camera{class CameraBase;}

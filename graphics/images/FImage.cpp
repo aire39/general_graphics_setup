@@ -14,7 +14,7 @@
 #include "support/utility.h"
 #include "support/cprocess.h"
 #include "support/ctypes.h"
-#include "Filters.h"
+#include "../filters/Filters.h"
 
 FImage::FImage()
   : Sprite("FImage")

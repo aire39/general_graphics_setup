@@ -3,14 +3,14 @@
 #include <string>
 #include <chrono>
 
-#include "graphics/FImage.h"
+#include "graphics/images/FImage.h"
 #include "SDL3/SDL_surface.h"
 #include "spdlog/spdlog.h"
+#include "spdlog/fmt/bundled/os.h"
 
 #include "common/support/utility.h"
 #include "video/camera/common/CameraFormats.h"
-#include "graphics/Filters.h"
-#include "spdlog/fmt/bundled/os.h"
+#include "graphics/filters/Filters.h"
 
 namespace {
   constexpr uint32_t max_capture_fails = 5;

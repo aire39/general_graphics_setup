@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <random>
-#include "PixelData.h"
+#include "../images/PixelData.h"
 
 namespace {
     std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> DefaultFilterProcess(const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p)
