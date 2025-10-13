@@ -7,7 +7,7 @@
 #include <glad/glad.h>
 
 #include "Primitive.h"
-#include "Texture2D.h"
+#include "../images/Texture2D.h"
 
 class Texture2D;
 struct SDL_Surface;

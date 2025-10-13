@@ -12,7 +12,7 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 #include <SDL3/SDL.h>
 
-#include <spdlog/spdlog.h>
+#include "common/support/logging.h"
 #include <spdlog/fmt/bundled/color.h>
 
 #include <glm/glm.hpp>
@@ -22,12 +22,12 @@
 #include <CLI/CLI.hpp>
 
 #include "GraphicsWindow.h"
-#include "graphics/OGLShader.h"
-#include "graphics/ShaderProgram.h"
-#include "graphics/FImage.h"
+#include "graphics/shaders/OGLShader.h"
+#include "graphics/shaders/ShaderProgram.h"
+#include "graphics/images/FImage.h"
 
-#include "graphics/PrebuiltShaderSources.h"
-#include "graphics/Filters.h"
+#include "graphics/shaders/PrebuiltShaderSources.h"
+#include "graphics/filters/Filters.h"
 
 void SetupShaderParams(const ShaderProgram & shader_program);
 bool WindowResize(void * data, SDL_Event * event);

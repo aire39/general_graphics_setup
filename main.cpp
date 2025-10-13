@@ -20,11 +20,11 @@
 #include <CLI/CLI.hpp>
 
 #include "GraphicsWindow.h"
-#include "graphics/OGLShader.h"
-#include "graphics/ShaderProgram.h"
-#include "graphics/FImage.h"
+#include "graphics/shaders/OGLShader.h"
+#include "graphics/shaders/ShaderProgram.h"
+#include "graphics/images/FImage.h"
 
-#include "graphics/PrebuiltShaderSources.h"
+#include "graphics/shaders/PrebuiltShaderSources.h"
 
 #include "support/logging.h"
 #include "support/utility.h"

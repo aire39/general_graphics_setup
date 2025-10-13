@@ -10,7 +10,7 @@
 #include <tbb/task_scheduler_observer.h>
 #endif
 
-#include "graphics/FilterTypes.h"
+#include "../../graphics/filters/FilterTypes.h"
 
 namespace gss::cprocess::loops {
 

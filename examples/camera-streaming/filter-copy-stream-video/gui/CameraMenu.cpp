@@ -4,7 +4,7 @@
 #include <spdlog/spdlog.h>
 #include "video/camera/common/CameraBase.h"
 #include "video/camera/common/CameraHelpers.h"
-#include "graphics/FImage.h"
+#include "graphics/images/FImage.h"
 #include "../filters/EdgeFilters.h"
 #include "support/logging.h"
 

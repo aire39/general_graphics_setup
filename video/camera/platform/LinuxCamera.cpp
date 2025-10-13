@@ -1,5 +1,5 @@
 #include "LinuxCamera.h"
-#include "graphics/FImage.h"
+#include "graphics/images/FImage.h"
 
 #include "SDL3/SDL_surface.h"
 #include "common/support/logging.h"
@@ -7,7 +7,7 @@
 
 #include "common/support/utility.h"
 #include "video/camera/common/CameraFormats.h"
-#include "graphics/Filters.h"
+#include "graphics/filters/Filters.h"
 
 #if ENABLE_LINUX_PLATFORM_CHECKS && defined(__linux__) || defined(__unix__)
 #include "video/camera/common/CameraChecks.h"

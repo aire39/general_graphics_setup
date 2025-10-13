@@ -22,8 +22,8 @@
 #include <glm/glm.hpp>
 #include <SDL3/SDL_pixels.h>
 
-#include "Sprite.h"
-#include "FilterTypes.h"
+#include "../geometry/Sprite.h"
+#include "../filters/FilterTypes.h"
 #include "cthreads/cthreadpool.h"
 
 struct SDL_Surface;

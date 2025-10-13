@@ -11,8 +11,6 @@ add_definitions(-DEXAMPLES_PROJECT_ROOT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../")
 # setup application
 
 add_executable(${PROJECT_NAME}
-               ${GLAD_SOURCES}
-               ${GRAPHICS_FILES}
                gui/VaryingBitsMenu.cpp
                gui/VaryingBitsMenu.h
                main.cpp)

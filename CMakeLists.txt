@@ -155,7 +155,10 @@ target_include_directories(cthreads PUBLIC ${PROJECT_SOURCE_DIR}/common)
 
 ## Link and Executable Configuration
 
-file(GLOB GRAPHICS_FILES graphics/*)
+file(GLOB GRAPHICS_FILTER_FILES graphics/filters/*)
+file(GLOB GRAPHICS_GEOMETRY_FILES graphics/geometry/*)
+file(GLOB GRAPHICS_IMAGES_FILES graphics/images/*)
+file(GLOB GRAPHICS_SHADERS_FILES graphics/shaders/*)
 
 if (WIN32 AND NOT RUNNING_ON_WSL)
     unset(CAMERA_SRC)
@@ -177,36 +180,30 @@ include(cmake/examples.cmake)
 # setup application
 
 add_executable(${PROJECT_NAME}
-               ${GRAPHICS_FILES}
+               ${GRAPHICS_FILTER_FILES}
+               ${GRAPHICS_GEOMETRY_FILES}
+               ${GRAPHICS_IMAGES_FILES}
+               ${GRAPHICS_SHADERS_FILES}
                ${GLAD_SOURCES}
                ${CAMERA_SRC}
                GraphicsWindow.h
                GraphicsWindow.cpp
                OpenGLContext.h
                OpenGLContext.cpp
-               graphics/FImage.cpp
-               graphics/FImage.h
-               graphics/PrebuiltShaderSources.h
-               graphics/Filters.h
-               graphics/Filters.cpp
-               graphics/PixelData.h
                common/support/utility.h
                main.cpp)
 
 add_library(${PROJECT_NAME}-static STATIC
-            ${GRAPHICS_FILES}
+            ${GRAPHICS_FILTER_FILES}
+            ${GRAPHICS_GEOMETRY_FILES}
+            ${GRAPHICS_IMAGES_FILES}
+            ${GRAPHICS_SHADERS_FILES}
             ${GLAD_SOURCES}
             ${CAMERA_SRC}
             GraphicsWindow.h
             GraphicsWindow.cpp
             OpenGLContext.h
             OpenGLContext.cpp
-            graphics/FImage.cpp
-            graphics/FImage.h
-            graphics/PrebuiltShaderSources.h
-            graphics/Filters.h
-            graphics/Filters.cpp
-            graphics/PixelData.h
             common/support/utility.h)
 
 if (WIN32)

@@ -22,12 +22,12 @@
 #include <CLI/CLI.hpp>
 
 #include "GraphicsWindow.h"
-#include "graphics/OGLShader.h"
-#include "graphics/ShaderProgram.h"
-#include "graphics/FImage.h"
+#include "graphics/shaders/OGLShader.h"
+#include "graphics/shaders/ShaderProgram.h"
+#include "graphics/images/FImage.h"
 
-#include "graphics/PrebuiltShaderSources.h"
-#include "graphics/Filters.h"
+#include "graphics/shaders/PrebuiltShaderSources.h"
+#include "graphics/filters/Filters.h"
 
 void SetupShaderParams(const ShaderProgram & shader_program);
 bool WindowResize(void * data, SDL_Event * event);

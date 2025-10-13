@@ -11,20 +11,18 @@ add_definitions(-DEXAMPLES_PROJECT_ROOT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../")
 # setup application
 
 add_executable(${PROJECT_NAME}
-        ${GLAD_SOURCES}
-        ${GRAPHICS_FILES}
-        gui/CameraMenu.cpp
-        gui/CameraMenu.h
-        main.cpp)
+               gui/CameraMenu.cpp
+               gui/CameraMenu.h
+               main.cpp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC graphics-static)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC graphics-static)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        imgui
-        imgui_backend
-        cthreads)
+                      imgui
+                      imgui_backend
+                      cthreads)
 
 ## Compiler Options
 

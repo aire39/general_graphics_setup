@@ -1,6 +1,6 @@
 #pragma once
 
-#include "graphics/FilterTypes.h"
+#include "graphics/filters/FilterTypes.h"
 #include "common/support/utility.h"
 
 namespace filter::functions::cpu::parallel_vectorize {
