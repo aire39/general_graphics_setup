@@ -8,14 +8,12 @@
 #include <climits>
 #include <processthreadsapi.h>
 
-#include <pshpack8.h>
-typedef struct {
+typedef struct alignas(8) {
   DWORD dwType;
   LPCSTR szName;
   DWORD dwThreadID;
   DWORD dwFlags;
 } THREADNAME_INFO;
-#include <poppack.h>
 
 static EXCEPTION_DISPOSITION NTAPI ignore_handler(EXCEPTION_RECORD *rec,
                                                   void *frame, CONTEXT *ctx,
