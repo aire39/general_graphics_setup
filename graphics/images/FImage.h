@@ -46,6 +46,7 @@ class FImage final : public Sprite
     bool ProcessFilter(int32_t image_id, const filter::types::FilterType& filter, bool save_filter, int32_t repeat = -1);
     bool ProcessFilter(const std::string& filter_name, const filter::types::FilterType& filter, bool save_filter, int32_t repeat = -1);
     bool ProcessFilter(const std::string& filter_name, const std::string& filter_name_to, const filter::types::FilterType& filter, int32_t repeat = -1);
+    bool ProcessFilterFromImage(const FImage* other_fimage, int32_t index_other, int32_t index_self, const filter::types::FilterType& filter);
 
     void SetPixel(int32_t image_id, int32_t x, int32_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a) const;
     void SetPixel(int32_t x, int32_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a) const;
@@ -128,6 +129,7 @@ class FImage final : public Sprite
     int32_t privProcessFilter(const int32_t& image_id, const filter::types::FilterType& filter, const bool& save_filter, const int32_t& repeat);
     int32_t privProcessFilter(const std::string& filter_name, const filter::types::FilterType &filter, const bool& save_filter, const int32_t& repeat);
     int32_t privProcessFilter(const std::string& filter_name, const std::string& filter_name_to, const filter::types::FilterType& filter, const int32_t& repeat);
+    bool privProcessFilterFromImage(const FImage* other_fimage, const int32_t& index_other, const int32_t& index_self, const filter::types::FilterType& filter);
 
     int32_t GetRepeatCount(int32_t image_id, bool save_filter);
     SDL_Surface* privRunFilter(const SDL_Surface* read_image, SDL_Surface* write_image, const filter::types::FilterType &filter, int32_t repeat_filter_n_times, const bool& in_progress);

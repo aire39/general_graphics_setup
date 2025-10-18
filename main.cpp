@@ -29,6 +29,15 @@
 #include "support/logging.h"
 #include "support/utility.h"
 
+#include "video/camera/Camera.h"
+#include "video/camera/common/CameraFormats.h"
+#include "process/PixelFormatConversionBlock.h"
+
+#include "gui/CameraMenu.h"
+#include "process/PixelEdgeBlock.h"
+
+#include "gui/CameraMenu.h"
+
 void SetupShaderParams(const ShaderProgram & shader_program);
 bool WindowResize(void * data, SDL_Event * event);
 void PrintStartMessage();
@@ -78,6 +87,17 @@ int32_t main(int32_t argc, char*argv[])
 
   // do some setup work here
 
+  gss::video::camera::Camera camera(0, 640, 480, {30, 1}, gss::video::camera::formats::UYVY_FORMAT, true);
+  CameraMenu camera_menu(&camera);
+
+  camera.StartCapture();
+
+  auto process_edge_block = std::make_shared<PixelEdgeBlock>("edgeblock", "process edges from image");
+  auto process_format_block = std::make_shared<PixelFormatConversionBlock>("fmtblock", "convert uyvy to rgb", process_edge_block);
+
+  process_format_block->Enable(true);
+  process_edge_block->Enable(true);
+
   // initialize imGUI
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
@@ -112,12 +132,24 @@ int32_t main(int32_t argc, char*argv[])
 
     // do imgui work
 
+    camera_menu.RenderMenu();
+
     ImGui::Render();
     GraphicsWindow::ClearWindow();
 
     // do work
 
     SetupShaderParams(shader_program);
+
+    if (const auto frame = camera.ExtractFrame())
+    {
+      process_format_block->QueueToProcess(frame);
+    }
+
+    if (auto process_frame = process_edge_block->GetImage())
+    {
+      process_frame->ViewTexture();
+    }
 
     //sprite.SetPosition({100.0f * std::cos(location_time), 100.0f * std::sin(location_time)});
     //logging::info("time: {}", location_time);

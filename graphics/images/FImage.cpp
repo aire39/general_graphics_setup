@@ -145,6 +145,11 @@ bool FImage::ProcessFilter(const std::string& filter_name, const std::string &fi
     return valid_image;
 }
 
+bool FImage::ProcessFilterFromImage(const FImage* other_fimage, const int32_t index_other, const int32_t index_self, const filter::types::FilterType& filter)
+{
+    return privProcessFilterFromImage(other_fimage, index_other, index_self, filter);
+}
+
 void FImage::SetPixel(const int32_t image_id, const int32_t x, const int32_t y, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a) const
 {
     if (!filteredImageData.empty() && image_id >= 0 && image_id < static_cast<glm::int32>(filteredImageData.size()) && filteredImageData[image_id] && (x >= 0) && (x <= filteredImageData[image_id]->w) && (y >= 0) && (y <= filteredImageData[image_id]->h - 1))
@@ -888,6 +893,110 @@ int32_t FImage::privProcessFilter(const std::string& filter_name, const std::str
     }
 
     return valid_image_id;
+}
+
+bool FImage::privProcessFilterFromImage(const FImage *other_fimage, const int32_t& index_other, const int32_t& index_self, const filter::types::FilterType &filter)
+{
+    std::lock_guard lock(mutex);
+
+    int32_t valid_image_id = -1;
+
+    if (other_fimage)
+    {
+        const SDL_Surface* write_image = nullptr;
+        const SDL_Surface* read_image = nullptr;
+
+        if (index_self >= 0 && index_self < static_cast<int32_t>(filteredImageData.size()))
+        {
+            filterProcessCalls[index_self] = filter;
+            write_image = filteredImageData[index_self].get();
+            valid_image_id = index_self;
+        }
+        else
+        {
+            logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "Not a valid image id"));
+            return false;
+        }
+
+        read_image = other_fimage->privSelectReadImage(index_other, false);
+
+        if (read_image && write_image)
+        {
+            if (inProgressOfUpdatingFilters)
+            {
+                inProgressOfUpdatingFilters = false;
+
+                std::unique_lock reapplyFilterLock(reapplyFilterMutex);
+                cvWaitForThreadToComplete.wait(reapplyFilterLock, [this] {return isProgressThreadComplete;});
+            }
+
+            //const uint8_t bytes_per_pixel = SDL_GetPixelFormatDetails(read_image->format)->bytes_per_pixel;
+            //constexpr int32_t reapply_filter_offset_count = 1;
+
+            const SDL_Surface* read_image_tmp = other_fimage->privSelectReadImage(index_other, false);
+            SDL_Surface* write_image_tmp = filteredImageData[index_self].get();
+            const auto use_filter = filter;
+
+            if (read_image_tmp)
+            {
+                constexpr bool in_progress = true;
+                const int32_t n_repeats = GetRepeatCount(index_self, false);
+                privRunFilter(read_image_tmp, write_image_tmp, use_filter, n_repeats, in_progress);
+
+                // add thread job here
+/*
+                if (reapply_filter_offset_count > 0)
+                {
+                    inProgressOfUpdatingFilters = true;
+                    isProgressThreadComplete = false;
+                    threadPool.addjob([this, reapply_filter_offset_count=reapply_filter_offset_count, image_id=index_self, other_fimage=other_fimage, bytes_per_pixel=bytes_per_pixel, current_view_layer=currentViewLayer]() -> void {
+
+                        //std::lock_guard buf_lock(createBufferMutex); // TODO: BUG
+
+                        for (int32_t i=1; i < reapply_filter_offset_count; i++)
+                        {
+                            const SDL_Surface* tp_read_image_tmp = other_fimage->privSelectReadImage(image_id + i, false);
+                            const SDL_Surface* tp_write_image_tmp = filteredImageData[image_id + i + 1].get();
+                            auto tp_use_filter = filterProcessCalls[image_id + i + 1];
+
+                            constexpr int32_t reapply_thread_n_repeats = 1;
+                            privRunFilter(tp_read_image_tmp, tmpBuffer.get(), tp_use_filter, reapply_thread_n_repeats, inProgressOfUpdatingFilters);
+
+                            if (!inProgressOfUpdatingFilters)
+                            {
+                                isProgressThreadComplete = true;
+                                break;
+                            }
+
+                            const auto tmp_byte_data = static_cast<uint8_t*>(tmpBuffer->pixels);
+                            const auto image_write_byte_data = static_cast<uint8_t*>(tp_write_image_tmp->pixels);
+                            utility::fast_memcpy(image_write_byte_data, tmp_byte_data, bytes_per_pixel * tp_read_image_tmp->h);
+
+                            if (current_view_layer != currentViewLayer && currentViewLayer != 0 && currentViewLayer > image_id)
+                            {
+                                hasViewChangedToInProcessFilter = true;
+                            }
+                        }
+
+                        //inProgressOfUpdatingFilters = false;
+                        //isProgressThreadComplete = true;
+                        //cvWaitForThreadToComplete.notify_all();
+                    });
+                }
+*/
+            }
+            else
+            {
+                logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "invalid image id filter"));
+            }
+        }
+        else
+        {
+            logging::warn(fmt::format(fmt::fg(fmt::terminal_color::bright_yellow), "No data to apply filter!"));
+        }
+    }
+
+    return valid_image_id >= 0;
 }
 
 int32_t FImage::GetRepeatCount(const int32_t image_id, const bool save_filter)

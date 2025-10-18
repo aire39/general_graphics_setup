@@ -168,6 +168,7 @@ file(GLOB GRAPHICS_FILTER_FILES graphics/filters/*)
 file(GLOB GRAPHICS_GEOMETRY_FILES graphics/geometry/*)
 file(GLOB GRAPHICS_IMAGES_FILES graphics/images/*)
 file(GLOB GRAPHICS_SHADERS_FILES graphics/shaders/*)
+file(GLOB IMAGE_BLOCK_PROCESS_FILES process/*)
 
 if (WIN32 AND NOT RUNNING_ON_WSL)
     unset(CAMERA_SRC)
@@ -193,8 +194,11 @@ add_executable(${PROJECT_NAME}
                ${GRAPHICS_GEOMETRY_FILES}
                ${GRAPHICS_IMAGES_FILES}
                ${GRAPHICS_SHADERS_FILES}
+               ${IMAGE_BLOCK_PROCESS_FILES}
                ${GLAD_SOURCES}
                ${CAMERA_SRC}
+               gui/CameraMenu.h
+               gui/CameraMenu.cpp
                GraphicsWindow.h
                GraphicsWindow.cpp
                OpenGLContext.h
@@ -207,8 +211,11 @@ add_library(${PROJECT_NAME}-static STATIC
             ${GRAPHICS_GEOMETRY_FILES}
             ${GRAPHICS_IMAGES_FILES}
             ${GRAPHICS_SHADERS_FILES}
+            ${IMAGE_BLOCK_PROCESS_FILES}
             ${GLAD_SOURCES}
             ${CAMERA_SRC}
+            gui/CameraMenu.h
+            gui/CameraMenu.cpp
             GraphicsWindow.h
             GraphicsWindow.cpp
             OpenGLContext.h
