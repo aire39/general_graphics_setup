@@ -9,6 +9,8 @@ namespace filter::functions::cpu::parallel_vectorize {
     extern types::FilterType gaussian_blur_3x3;
     extern types::FilterType uyvy_to_rgb_conversion;
     extern types::FilterType yuy2_to_rgb_conversion;
+
+    //extern types::FilterType yuy2_to_rgb_conversion;
 }
 
 namespace filter::functions::cpu::sequential {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include "graphics/filters/FilterTypes.h"
 #include "common/support/utility.h"
 
@@ -40,7 +41,7 @@ namespace filter::functions::cpu::parallel_vectorize {
     uint8_t a = 255;
 
     constexpr int8_t kernel_matrix_x[] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
-    constexpr int8_t kernel_matrix_y[] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
+    constexpr int8_t kernel_matrix_y[] = {-1, -2, -1, 0, 0, 0, 1, 2, 1};
 
     if (image_data && w && h && p && (bpp == 3))
     {
@@ -48,6 +49,99 @@ namespace filter::functions::cpu::parallel_vectorize {
       r = utility::clamp_to_byte(convolution(image_data, kernel_matrix_x, x, y, 0, default_kernel_size, w, h, bpp) + convolution(image_data, kernel_matrix_y, x, y, 0, default_kernel_size, w, h, bpp));
       g = utility::clamp_to_byte(convolution(image_data, kernel_matrix_x, x, y, 1, default_kernel_size, w, h, bpp) + convolution(image_data, kernel_matrix_y, x, y, 1, default_kernel_size, w, h, bpp));
       b = utility::clamp_to_byte(convolution(image_data, kernel_matrix_x, x, y, 2, default_kernel_size, w, h, bpp) + convolution(image_data, kernel_matrix_y, x, y, 2, default_kernel_size, w, h, bpp));
+    }
+
+    return {r, g, b, a};
+
+  }
+    , filter::types::ExecutionPolicies::par_unseq
+    , 0
+  };
+
+  inline filter::types::FilterType sobel_edge_process = {[] (const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> {
+
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+    uint8_t a = 255;
+
+    constexpr int8_t kernel_matrix_x[] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
+    constexpr int8_t kernel_matrix_y[] = {-1, -2, -1, 0, 0, 0, 1, 2, 1};
+
+    if (image_data && w && h && p && (bpp == 3))
+    {
+      constexpr int default_kernel_size = 3;
+      const int32_t rx = convolution(image_data, kernel_matrix_x, x, y, 0, default_kernel_size, w, h, bpp);
+      const int32_t ry = convolution(image_data, kernel_matrix_y, x, y, 0, default_kernel_size, w, h, bpp);
+      const int32_t r_mag = static_cast<int32_t>(std::sqrt((rx * rx) + (ry * ry)));
+
+      const int32_t gx = convolution(image_data, kernel_matrix_x, x, y, 1, default_kernel_size, w, h, bpp);
+      const int32_t gy = convolution(image_data, kernel_matrix_y, x, y, 1, default_kernel_size, w, h, bpp);
+      const int32_t g_mag = static_cast<int32_t>(std::sqrt((gx * gx) + (gy * gy)));
+
+      const int32_t bx = convolution(image_data, kernel_matrix_x, x, y, 2, default_kernel_size, w, h, bpp);
+      const int32_t by = convolution(image_data, kernel_matrix_y, x, y, 2, default_kernel_size, w, h, bpp);
+      const int32_t b_mag = static_cast<int32_t>(std::sqrt((bx * bx) + (by * by)));
+
+      r = utility::clamp_to_byte(r_mag);
+      g = utility::clamp_to_byte(g_mag);
+      b = utility::clamp_to_byte(b_mag);
+    }
+
+    return {r, g, b, a};
+
+  }
+    , filter::types::ExecutionPolicies::par_unseq
+    , 0
+  };
+
+  inline filter::types::FilterType edge_gradient_x_process = {[] (const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> {
+
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+    uint8_t a = 255;
+
+    constexpr int8_t kernel_matrix_x[] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
+
+    if (image_data && w && h && p && (bpp == 3))
+    {
+      constexpr int default_kernel_size = 3;
+      const int32_t rx = convolution(image_data, kernel_matrix_x, x, y, 0, default_kernel_size, w, h, bpp);
+      const int32_t gx = convolution(image_data, kernel_matrix_x, x, y, 1, default_kernel_size, w, h, bpp);
+      const int32_t bx = convolution(image_data, kernel_matrix_x, x, y, 2, default_kernel_size, w, h, bpp);
+
+      r = utility::clamp_to_byte(rx);
+      g = utility::clamp_to_byte(gx);
+      b = utility::clamp_to_byte(bx);
+    }
+
+    return {r, g, b, a};
+
+  }
+    , filter::types::ExecutionPolicies::par_unseq
+    , 0
+  };
+
+  inline filter::types::FilterType edge_gradient_y_process = {[] (const uint8_t * image_data, const int32_t& x, const int32_t& y, const int32_t& bpp, const int32_t& w, const int32_t& h, const int32_t& p, [[maybe_unused]] const filter::types::FilterUserTypes user_data) -> std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> {
+
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+    uint8_t a = 255;
+
+    constexpr int8_t kernel_matrix_y[] = {-1, -2, -1, 0, 0, 0, 1, 2, 1};
+
+    if (image_data && w && h && p && (bpp == 3))
+    {
+      constexpr int default_kernel_size = 3;
+      const int32_t ry = convolution(image_data, kernel_matrix_y, x, y, 0, default_kernel_size, w, h, bpp);
+      const int32_t gy = convolution(image_data, kernel_matrix_y, x, y, 1, default_kernel_size, w, h, bpp);\
+      const int32_t by = convolution(image_data, kernel_matrix_y, x, y, 2, default_kernel_size, w, h, bpp);
+
+      r = utility::clamp_to_byte(ry);
+      g = utility::clamp_to_byte(gy);
+      b = utility::clamp_to_byte(by);
     }
 
     return {r, g, b, a};

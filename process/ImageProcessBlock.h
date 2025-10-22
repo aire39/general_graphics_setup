@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <queue>
+#include <vector>
 #include <memory>
 #include <string>
 #include <condition_variable>
@@ -19,22 +20,24 @@ class ImageProcessBlock
     explicit ImageProcessBlock(const std::string &thread_name, const std::string &thread_description, std::shared_ptr<ImageProcessBlock> other);
     virtual ~ImageProcessBlock();
 
-    void QueueToProcess(std::shared_ptr<FImage> image);
+    void QueueToProcess(std::vector<std::shared_ptr<FImage>> images);
     void Enable(bool enable);
 
     DataFlow GetDataFlow() const;
-    std::shared_ptr<FImage> GetImage();
+    std::vector<std::shared_ptr<FImage>> GetImage();
+    std::shared_ptr<FImage> GetLastImage();
+    std::shared_ptr<FImage> GetFrontImage();
 
   protected:
     std::string name = "name";
     std::string description = "description";
     DataFlow dataFlow = DataFlow::F_IN;
     std::shared_ptr<ImageProcessBlock> connection = nullptr;
-    std::queue<std::shared_ptr<FImage>> imageQueue;
-    std::queue<std::shared_ptr<FImage>> imageOutQueue;
+    std::queue<std::vector<std::shared_ptr<FImage>>> imageQueue;
+    std::queue<std::vector<std::shared_ptr<FImage>>> imageOutQueue;
     cthread processThread;
 
-    virtual std::shared_ptr<FImage> Process(std::shared_ptr<FImage> image_source) = 0;
+    virtual std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) = 0;
 
   private:
     bool enableProcess = false;

@@ -19,10 +19,16 @@ PixelEdgeBlock::PixelEdgeBlock(const std::string &thread_name, const std::string
   dataFlow = DataFlow::F_INOUT;
 }
 
-std::shared_ptr<FImage> PixelEdgeBlock::Process(std::shared_ptr<FImage> image_source)
+std::vector<std::shared_ptr<FImage>> PixelEdgeBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources)
 {
-  auto edged_image = std::make_shared<FImage>("edged image", image_source->GetWidth(), image_source->GetHeight(), SDL_PIXELFORMAT_RGB24, true);
-  edged_image->ProcessFilterFromImage(image_source.get(), 0, 0, filter::functions::cpu::parallel_vectorize::edge_process);
+  std::shared_ptr<FImage> image_source = nullptr;
+  if (!image_sources.empty())
+  {
+    image_source = image_sources.back();
+  }
 
-  return edged_image;
+  auto edged_image = std::make_shared<FImage>("edged image", image_source->GetWidth(), image_source->GetHeight(), SDL_PIXELFORMAT_RGB24, true);
+  edged_image->ProcessFilterFromImage(image_source.get(), 0, 0, filter::functions::cpu::parallel_vectorize::sobel_edge_process);
+
+  return {edged_image};
 }

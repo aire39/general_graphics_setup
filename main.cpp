@@ -143,10 +143,10 @@ int32_t main(int32_t argc, char*argv[])
 
     if (const auto frame = camera.ExtractFrame())
     {
-      process_format_block->QueueToProcess(frame);
+      process_format_block->QueueToProcess({frame});
     }
 
-    if (auto process_frame = process_edge_block->GetImage())
+    if (auto process_frame = process_edge_block->GetLastImage())
     {
       process_frame->ViewTexture();
     }

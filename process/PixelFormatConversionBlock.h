@@ -9,5 +9,5 @@ class PixelFormatConversionBlock final : public ImageProcessBlock
     explicit PixelFormatConversionBlock(const std::string &thread_name, const std::string &thread_description);
     explicit PixelFormatConversionBlock(const std::string &thread_name, const std::string &thread_description, std::shared_ptr<ImageProcessBlock> other);
   protected:
-    std::shared_ptr<FImage> Process(std::shared_ptr<FImage> image_source) override;
+    std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) override;
 };

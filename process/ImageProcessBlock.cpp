@@ -28,13 +28,13 @@ ImageProcessBlock::~ImageProcessBlock()
   }
 }
 
-void ImageProcessBlock::QueueToProcess(std::shared_ptr<FImage> image)
+void ImageProcessBlock::QueueToProcess(std::vector<std::shared_ptr<FImage>> images)
 {
-  if (enableProcess && image)
+  if (enableProcess && !images.empty())
   {
     {
       std::lock_guard q_lock(mtxImageQueue);
-      imageQueue.push(image);
+      imageQueue.push(images);
     }
 
     std::unique_lock lock(mtxCVImageQueue);
@@ -59,7 +59,23 @@ ImageProcessBlock::DataFlow ImageProcessBlock::GetDataFlow() const
   return dataFlow;
 }
 
-std::shared_ptr<FImage> ImageProcessBlock::GetImage()
+std::vector<std::shared_ptr<FImage>> ImageProcessBlock::GetImage()
+{
+  std::vector<std::shared_ptr<FImage>> images;
+
+  {
+    std::lock_guard q_lock(mtxImageOutQueue);
+    if (!imageOutQueue.empty())
+    {
+      images = imageOutQueue.front();
+      imageOutQueue.pop();
+    }
+  }
+
+  return images;
+}
+
+std::shared_ptr<FImage> ImageProcessBlock::GetLastImage()
 {
   std::shared_ptr<FImage> image = nullptr;
 
@@ -67,8 +83,28 @@ std::shared_ptr<FImage> ImageProcessBlock::GetImage()
     std::lock_guard q_lock(mtxImageOutQueue);
     if (!imageOutQueue.empty())
     {
-      image = imageOutQueue.front();
+      const auto images = imageOutQueue.front();
       imageOutQueue.pop();
+
+      image = images.back();
+    }
+  }
+
+  return image;
+}
+
+std::shared_ptr<FImage> ImageProcessBlock::GetFrontImage()
+{
+  std::shared_ptr<FImage> image = nullptr;
+
+  {
+    std::lock_guard q_lock(mtxImageOutQueue);
+    if (!imageOutQueue.empty())
+    {
+      const auto images = imageOutQueue.front();
+      imageOutQueue.pop();
+
+      image = images.front();
     }
   }
 
@@ -86,29 +122,29 @@ void ImageProcessBlock::RunProcessTask()
       });
     }
 
-    std::shared_ptr<FImage> source_image = nullptr;
+    std::vector<std::shared_ptr<FImage>> source_images;
     {
       std::lock_guard q_lock(mtxImageQueue);
       if (!imageQueue.empty())
       {
-        source_image = imageQueue.front();
+        source_images = imageQueue.front();
         imageQueue.pop();
       }
     }
 
-    std::shared_ptr<FImage> output_image = nullptr;
-    if (source_image)
+    std::vector<std::shared_ptr<FImage>> output_image;
+    if (!source_images.empty())
     {
-      output_image = Process(source_image);
+      output_image = Process(source_images);
     }
 
-    if ((dataFlow == DataFlow::F_OUT || dataFlow == DataFlow::F_INOUT) && output_image)
+    if ((dataFlow == DataFlow::F_OUT || dataFlow == DataFlow::F_INOUT) && !output_image.empty())
     {
       std::lock_guard q_lock(mtxImageOutQueue);
       imageOutQueue.push(output_image);
     }
 
-    if (connection && output_image)
+    if (connection && !output_image.empty())
     {
       connection->QueueToProcess(output_image);
     }
