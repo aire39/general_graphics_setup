@@ -27,6 +27,15 @@ if(UNIX AND EXISTS "/proc/version")
     endif()
 endif()
 
+# Add OpenCV
+
+set(ENABLE_OPENCV_SUPPORT OFF CACHE BOOL "Enable Opencv Support")
+
+if (ENABLE_OPENCV_SUPPORT)
+    include(cmake/opencv.cmake)
+    find_package(OpenCV REQUIRED)
+endif ()
+
 ## basic includes
 
 include_directories(${CMAKE_SOURCE_DIR})
@@ -208,6 +217,7 @@ add_library(${PROJECT_NAME}-static STATIC
 
 if (WIN32)
 target_link_libraries(${PROJECT_NAME} PUBLIC
+                      ${OPENCV_LIBS}
                       SDL3::SDL3-static
                       SDL3_image::SDL3_image
                       ${OPENGL_LIBRARIES}
@@ -274,6 +284,10 @@ target_link_libraries(${PROJECT_NAME}-static PRIVATE
                       imgui_backend
                       cthreads)
 
+target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenCV_LIBS})
+
+target_link_libraries(${PROJECT_NAME}-static PRIVATE ${OpenCV_LIBS})
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else()
 
@@ -303,6 +317,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                            $<TARGET_PROPERTY:CLI11::CLI11,INTERFACE_INCLUDE_DIRECTORIES
                            $<TARGET_PROPERTY:cthreads::cthreads,INTERFACE_INCLUDE_DIRECTORIES)
 
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${OpenCV_INCLUDE_DIRS})
+
 target_include_directories(${PROJECT_NAME}-static PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}
                            $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>
@@ -313,10 +329,19 @@ target_include_directories(${PROJECT_NAME}-static PUBLIC
                            $<TARGET_PROPERTY:CLI11::CLI11,INTERFACE_INCLUDE_DIRECTORIES
                            $<TARGET_PROPERTY:cthreads::cthreads,INTERFACE_INCLUDE_DIRECTORIES)
 
+target_include_directories(${PROJECT_NAME}-static SYSTEM PUBLIC ${OpenCV_INCLUDE_DIRS})
+
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                    ${CMAKE_SOURCE_DIR}/glsl
                    ${CMAKE_CURRENT_BINARY_DIR}/glsl)
+
+foreach(dll ${OPENCV_DLLS})
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy
+                   ${dll}
+                   ${CMAKE_BINARY_DIR})
+endforeach()
 
 ## Compiler Options
 
