@@ -11,11 +11,11 @@ PixelEdgeBlock::PixelEdgeBlock(const std::string &thread_name, const std::string
   dataFlow = DataFlow::F_INOUT;
 }
 
-PixelEdgeBlock::PixelEdgeBlock(const std::string &thread_name, const std::string &thread_description, std::shared_ptr<ImageProcessBlock> other)
+PixelEdgeBlock::PixelEdgeBlock(const std::string &thread_name, const std::string &thread_description, const std::vector<std::shared_ptr<ImageProcessBlock>> &others)
 {
   name = thread_name;
   description = thread_description;
-  connection = other;
+  connections = others;
   dataFlow = DataFlow::F_INOUT;
 }
 

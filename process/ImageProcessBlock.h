@@ -17,7 +17,7 @@ class ImageProcessBlock
 
     ImageProcessBlock() = default;
     explicit ImageProcessBlock(const std::string &thread_name, const std::string &thread_description);
-    explicit ImageProcessBlock(const std::string &thread_name, const std::string &thread_description, std::shared_ptr<ImageProcessBlock> other);
+    explicit ImageProcessBlock(const std::string &thread_name, const std::string &thread_description, const std::vector<std::shared_ptr<ImageProcessBlock>> &others);
     virtual ~ImageProcessBlock();
 
     void QueueToProcess(std::vector<std::shared_ptr<FImage>> images);
@@ -32,7 +32,7 @@ class ImageProcessBlock
     std::string name = "name";
     std::string description = "description";
     DataFlow dataFlow = DataFlow::F_IN;
-    std::shared_ptr<ImageProcessBlock> connection = nullptr;
+    std::vector<std::shared_ptr<ImageProcessBlock>> connections;
     std::queue<std::vector<std::shared_ptr<FImage>>> imageQueue;
     std::queue<std::vector<std::shared_ptr<FImage>>> imageOutQueue;
     cthread processThread;
@@ -48,3 +48,5 @@ class ImageProcessBlock
     void RunProcessTask();
 
 };
+
+typedef std::vector<std::shared_ptr<ImageProcessBlock>> ImageBlockList;

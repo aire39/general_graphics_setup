@@ -34,9 +34,11 @@
 #include "process/PixelFormatConversionBlock.h"
 
 #include "gui/CameraMenu.h"
-#include "process/PixelEdgeBlock.h"
+#include "gui/PixelCornersMenu.h"
+#include "gui/ImageBlockViewMenu.h"
 
-#include "gui/CameraMenu.h"
+#include "process/PixelEdgeBlock.h"
+#include "process/PixelCornersBlock.h"
 
 void SetupShaderParams(const ShaderProgram & shader_program);
 bool WindowResize(void * data, SDL_Event * event);
@@ -92,11 +94,16 @@ int32_t main(int32_t argc, char*argv[])
 
   camera.StartCapture();
 
+  auto process_corners_block = std::make_shared<PixelCornersBlock>("cornersblock", "process corners from image");
   auto process_edge_block = std::make_shared<PixelEdgeBlock>("edgeblock", "process edges from image");
-  auto process_format_block = std::make_shared<PixelFormatConversionBlock>("fmtblock", "convert uyvy to rgb", process_edge_block);
+  auto process_format_block = std::make_shared<PixelFormatConversionBlock>("fmtblock", "convert uyvy to rgb", ImageBlockList{process_edge_block, process_corners_block});
 
   process_format_block->Enable(true);
   process_edge_block->Enable(true);
+  process_corners_block->Enable(true);
+
+  PixelCornersMenu pixel_corners_menu(process_corners_block.get());
+  ImageBlockViewMenu image_block_menu({process_format_block.get(), process_edge_block.get(), process_corners_block.get()});
 
   // initialize imGUI
   ImGui::CreateContext();
@@ -133,6 +140,8 @@ int32_t main(int32_t argc, char*argv[])
     // do imgui work
 
     camera_menu.RenderMenu();
+    pixel_corners_menu.RenderMenu();
+    image_block_menu.RenderMenu();
 
     ImGui::Render();
     GraphicsWindow::ClearWindow();
@@ -146,7 +155,7 @@ int32_t main(int32_t argc, char*argv[])
       process_format_block->QueueToProcess({frame});
     }
 
-    if (auto process_frame = process_edge_block->GetLastImage())
+    if (auto process_frame = image_block_menu.GetImage())
     {
       process_frame->ViewTexture();
     }

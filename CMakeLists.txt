@@ -201,6 +201,10 @@ add_executable(${PROJECT_NAME}
                ${CAMERA_SRC}
                gui/CameraMenu.h
                gui/CameraMenu.cpp
+               gui/PixelCornersMenu.h
+               gui/PixelCornersMenu.cpp
+               gui/ImageBlockViewMenu.h
+               gui/ImageBlockViewMenu.cpp
                GraphicsWindow.h
                GraphicsWindow.cpp
                OpenGLContext.h
@@ -219,6 +223,10 @@ add_library(${PROJECT_NAME}-static STATIC
             ${CAMERA_SRC}
             gui/CameraMenu.h
             gui/CameraMenu.cpp
+            gui/PixelCornersMenu.h
+            gui/PixelCornersMenu.cpp
+            gui/ImageBlockViewMenu.h
+            gui/ImageBlockViewMenu.cpp
             GraphicsWindow.h
             GraphicsWindow.cpp
             OpenGLContext.h

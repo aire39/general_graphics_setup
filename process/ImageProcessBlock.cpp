@@ -12,11 +12,11 @@ ImageProcessBlock::ImageProcessBlock(const std::string &thread_name, const std::
   description = thread_description;
 }
 
-ImageProcessBlock::ImageProcessBlock(const std::string &thread_name, const std::string &thread_description, std::shared_ptr<ImageProcessBlock> other)
+ImageProcessBlock::ImageProcessBlock(const std::string &thread_name, const std::string &thread_description, const std::vector<std::shared_ptr<ImageProcessBlock>> &others)
 {
   name = thread_name;
   description = thread_description;
-  connection = other;
+  connections = others;
 }
 
 ImageProcessBlock::~ImageProcessBlock()
@@ -144,9 +144,12 @@ void ImageProcessBlock::RunProcessTask()
       imageOutQueue.push(output_image);
     }
 
-    if (connection && !output_image.empty())
+    if (!connections.empty() && !output_image.empty())
     {
-      connection->QueueToProcess(output_image);
+      for (auto conn : connections)
+      {
+        conn->QueueToProcess(output_image);
+      }
     }
   }
 }
