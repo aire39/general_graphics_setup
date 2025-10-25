@@ -18,6 +18,7 @@ void PixelCornersMenu::RenderMenu()
     ImGui::BeginGroup();
     if (ImGui::SliderFloat("K Factor", &kFactor, 0.01f, 0.1f, "%.2f")) pixelBlock->SetKValue(kFactor);
     if (ImGui::SliderFloat("Sigma Factor", &sigmaFactor, 0.0, 1.0f, "%.3f")) pixelBlock->SetSigma(sigmaFactor);
+    ImGui::Text("process time: %.2fms (%.2fms)", pixelBlock->TimeToComplete(), pixelBlock->TimeToCompleteFilter());
     ImGui::EndGroup();
     ImGui::PopID();
 

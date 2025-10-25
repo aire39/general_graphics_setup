@@ -23,6 +23,8 @@ class ImageProcessBlock
     void QueueToProcess(std::vector<std::shared_ptr<FImage>> images);
     void Enable(bool enable);
 
+    bool IsEnabled() const;
+
     DataFlow GetDataFlow() const;
     std::vector<std::shared_ptr<FImage>> GetImage();
     std::shared_ptr<FImage> GetLastImage();
@@ -38,6 +40,7 @@ class ImageProcessBlock
     cthread processThread;
 
     virtual std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) = 0;
+    virtual void ExtraEnableProcess() {}
 
   private:
     bool enableProcess = false;

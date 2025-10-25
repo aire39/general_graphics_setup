@@ -50,8 +50,14 @@ void ImageProcessBlock::Enable(const bool enable)
 
   if (enableProcess)
   {
+    ExtraEnableProcess();
     processThread = cthread(name.c_str(), description.c_str(), &ImageProcessBlock::RunProcessTask, this);
   }
+}
+
+bool ImageProcessBlock::IsEnabled() const
+{
+  return enableProcess;
 }
 
 ImageProcessBlock::DataFlow ImageProcessBlock::GetDataFlow() const
