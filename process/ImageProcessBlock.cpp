@@ -1,6 +1,7 @@
 #include "ImageProcessBlock.h"
 
 #include "graphics/images/FImage.h"
+#include "common/support/logging.h"
 
 namespace {
   constexpr uint32_t default_waitfor_queue_timeout = 100u;
@@ -34,6 +35,12 @@ void ImageProcessBlock::QueueToProcess(std::vector<std::shared_ptr<FImage>> imag
   {
     {
       std::lock_guard q_lock(mtxImageQueue);
+      while (imageQueue.size() > static_cast<size_t>(maxQueueSize))
+      {
+        imageQueue.pop();
+        droppedImages++;
+      }
+
       imageQueue.push(images);
     }
 
@@ -52,6 +59,10 @@ void ImageProcessBlock::Enable(const bool enable)
   {
     ExtraEnableProcess();
     processThread = cthread(name.c_str(), description.c_str(), &ImageProcessBlock::RunProcessTask, this);
+  }
+  else
+  {
+    ExtraDisableProcess();
   }
 }
 
@@ -115,6 +126,11 @@ std::shared_ptr<FImage> ImageProcessBlock::GetFrontImage()
   }
 
   return image;
+}
+
+void ImageProcessBlock::SetMaxQueueSize(int32_t max_queue_size)
+{
+  maxQueueSize = std::clamp(max_queue_size, 1, std::numeric_limits<int32_t>::max());
 }
 
 void ImageProcessBlock::RunProcessTask()

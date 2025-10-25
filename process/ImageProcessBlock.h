@@ -39,10 +39,13 @@ class ImageProcessBlock
     std::queue<std::vector<std::shared_ptr<FImage>>> imageOutQueue;
     cthread processThread;
 
+    void SetMaxQueueSize(int32_t max_queue_size);
     virtual std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) = 0;
     virtual void ExtraEnableProcess() {}
+    virtual void ExtraDisableProcess() {}
 
   private:
+    int32_t maxQueueSize = 1;
     bool enableProcess = false;
     std::condition_variable cvImageQueue;
     std::mutex mtxCVImageQueue;
@@ -50,6 +53,7 @@ class ImageProcessBlock
     std::mutex mtxImageOutQueue;
     void RunProcessTask();
 
+    static inline uint32_t droppedImages = 0;
 };
 
 typedef std::vector<std::shared_ptr<ImageProcessBlock>> ImageBlockList;

@@ -2,20 +2,22 @@
 
 #include <queue>
 #include <utility>
+#include <tuple>
 #include <condition_variable>
+#include <barrier>
 #include <mutex>
 
-#include "opencv2/opencv.hpp"
 #include "ImageProcessBlock.h"
 #include "common/cthreads/cthread.h"
+#include "opencv2/opencv.hpp"
 
-class PixelCornersBlock : public ImageProcessBlock
+class PixelCornersBlock final : public ImageProcessBlock
 {
   public:
-    PixelCornersBlock() = default;
+    PixelCornersBlock();
     explicit PixelCornersBlock(const std::string &thread_name, const std::string &thread_description);
     explicit PixelCornersBlock(const std::string &thread_name, const std::string &thread_description, const std::vector<std::shared_ptr<ImageProcessBlock>> &others);
-    ~PixelCornersBlock();
+    ~PixelCornersBlock() override;
 
     void SetSigma(double sigma);
     void SetKValue(float k);
@@ -26,6 +28,7 @@ class PixelCornersBlock : public ImageProcessBlock
   protected:
     std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) override;
     void ExtraEnableProcess() override;
+    void ExtraDisableProcess() override;
 
   private:
     float timeToComplete = 0.0f; // milliseconds
@@ -33,20 +36,38 @@ class PixelCornersBlock : public ImageProcessBlock
     double sigmaFactor = 1.0;
     float kFactor = 0.04f;
 
+    bool gradComplete = false;
+    bool gradBlurComplete = false;
+
     std::queue<std::pair<std::reference_wrapper<cv::Mat>, std::reference_wrapper<cv::Mat>>> sourcesGXQueue;
     std::queue<std::pair<std::reference_wrapper<cv::Mat>, std::reference_wrapper<cv::Mat>>> sourcesGYQueue;
+    std::queue<std::tuple<std::reference_wrapper<cv::Mat>, std::reference_wrapper<cv::Mat>, std::reference_wrapper<cv::Mat>>> sourcesGXYQueue;
+    std::queue<std::tuple<std::reference_wrapper<cv::Mat>, std::reference_wrapper<cv::Mat>, std::reference_wrapper<cv::Mat>>> sourcesGXXQueue;
+    std::queue<std::tuple<std::reference_wrapper<cv::Mat>, std::reference_wrapper<cv::Mat>, std::reference_wrapper<cv::Mat>>> sourcesGYYQueue;
     cthread produceGradXThread;
     cthread produceGradYThread;
+    cthread produceGradXYThread;
+    cthread produceGradXXThread;
+    cthread produceGradYYThread;
 
-    bool gradXComplete = false;
-    bool gradYComplete = false;
-    std::mutex mtxGradX;
-    std::mutex mtxGradY;
     std::mutex mtxReceivedInput;
-    std::condition_variable produceGradXCondition;
-    std::condition_variable produceGradYCondition;
+    std::mutex mtxReceivedGrad;
+    std::mutex mtxGrad;
+    std::mutex mtxGradBlur;
     std::condition_variable receivedInputCondition;
+    std::condition_variable receivedGradCondition;
+    std::condition_variable produceGradCondition;
+    std::condition_variable produceGradBlurCondition;
+
+    std::barrier<std::function<void()>> gradSync;
+    std::barrier<std::function<void()>> gradBlurSync;
 
     void GradXTask();
     void GradYTask();
+    void GradXYTask();
+    void GradXXTask();
+    void GradYYTask();
+
+    void OnPhaseGradCompletion() noexcept;
+    void OnPhaseGradBlurCompletion() noexcept;
 };
