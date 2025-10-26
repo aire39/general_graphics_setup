@@ -6,24 +6,26 @@ include(FetchContent)
 if (EXISTS "${CMAKE_SOURCE_DIR}/libs/opencv_contrib")
 else ()
         colored_message("1;34" "Fetch OpenCV contributions...")
+        file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/libs/opencv_contrib")
         FetchContent_Populate(
-                ocv-contrib
+                ocv_contrib
                 GIT_REPOSITORY https://github.com/opencv/opencv_contrib.git
                 GIT_TAG        4.12.0  # or latest release
-                SOURCE_DIR "${CMAKE_SOURCE_DIR}/libs/opencv_contrib"
         )
+file(RENAME "${ocv_contrib_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/libs/opencv_contrib")
         colored_message("1;34" "Fetch OpenCV contributions complete!")
 endif ()
 
 if (EXISTS "${CMAKE_SOURCE_DIR}/libs/opencv/")
 else ()
         colored_message("1;34" "Fetch OpenCV...")
+        file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/libs/opencv")
         FetchContent_Populate(
                         ocv
                         GIT_REPOSITORY https://github.com/opencv/opencv.git
                         GIT_TAG        4.12.0  # or latest release
-                        SOURCE_DIR "${CMAKE_SOURCE_DIR}/libs/opencv/"
                 )
+	file(RENAME "${ocv_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/libs/opencv")
         colored_message("1;34" "Fetch OpenCV complete! -- SOURCE_DIR: ${CMAKE_SOURCE_DIR}/libs/opencv/")
 endif ()
 
@@ -77,6 +79,7 @@ elseif((UNIX OR RUNNING_ON_WSL) AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
                 ERROR_VARIABLE errors
         )
     else()
+	message("build opencv linux")
         set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/opencv-nix-gcc/lib/cmake/opencv4)
         execute_process(
                 COMMAND "${CMAKE_SOURCE_DIR}/scripts/gcc/build-opencv.sh"
@@ -88,6 +91,9 @@ elseif((UNIX OR RUNNING_ON_WSL) AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
                 OUTPUT_VARIABLE output
                 ERROR_VARIABLE errors
         )
+		message("result: ${result}")
+		message("output: ${output}")
+		message("errors: ${errors}")
     endif ()
 elseif(WIN32 AND MINGW AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
