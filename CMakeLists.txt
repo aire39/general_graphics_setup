@@ -235,7 +235,6 @@ add_library(${PROJECT_NAME}-static STATIC
 
 if (WIN32)
 target_link_libraries(${PROJECT_NAME} PUBLIC
-                      ${OPENCV_LIBS}
                       SDL3::SDL3-static
                       SDL3_image::SDL3_image
                       ${OPENGL_LIBRARIES}
@@ -355,10 +354,20 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                    ${CMAKE_CURRENT_BINARY_DIR}/glsl)
 
 foreach(dll ${OPENCV_DLLS})
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy
-                   ${dll}
-                   ${CMAKE_BINARY_DIR})
+
+    if(CMAKE_GENERATOR MATCHES "Visual Studio")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                ${dll}
+                "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+        message("copy dll: ${dll} to ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+    else ()
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                ${dll}
+                ${CMAKE_BINARY_DIR})
+        message("copy dll: ${dll} to ${CMAKE_BINARY_DIR}")
+    endif ()
 endforeach()
 
 ## Compiler Options

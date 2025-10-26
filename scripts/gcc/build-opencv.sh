@@ -33,6 +33,9 @@ fi
 
 cd "opencv-$platform" || exit
 
+echo $(pwd)
+echo "${cmake_args[@]}"
+
 cmake -G "Ninja" "${cmake_args[@]}" ..
 
 if [ $? -ne 0 ]; then

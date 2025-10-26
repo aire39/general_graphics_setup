@@ -59,8 +59,24 @@ class PixelCornersBlock final : public ImageProcessBlock
     std::condition_variable produceGradCondition;
     std::condition_variable produceGradBlurCondition;
 
-    std::barrier<std::function<void()>> gradSync;
-    std::barrier<std::function<void()>> gradBlurSync;
+    class on_completion_grad {
+        PixelCornersBlock * ppcb;
+
+        public:
+          explicit on_completion_grad(PixelCornersBlock * pcb) : ppcb(pcb) {}
+          void operator()() const noexcept { ppcb->OnPhaseGradCompletion(); }
+    };
+
+    class on_completion_grad_blur {
+        PixelCornersBlock * ppcb;
+
+        public:
+          explicit on_completion_grad_blur(PixelCornersBlock * pcb) : ppcb(pcb) {}
+          void operator()() const noexcept { ppcb->OnPhaseGradBlurCompletion(); }
+    };
+
+    std::barrier<on_completion_grad> gradSync;
+    std::barrier<on_completion_grad_blur> gradBlurSync;
 
     void GradXTask();
     void GradYTask();

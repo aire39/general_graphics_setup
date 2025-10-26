@@ -1,5 +1,6 @@
 #include "ImageProcessBlock.h"
 
+#include <algorithm>
 #include "graphics/images/FImage.h"
 #include "common/support/logging.h"
 

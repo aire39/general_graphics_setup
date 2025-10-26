@@ -100,8 +100,7 @@ int32_t main(int32_t argc, char*argv[])
   shader_program.SetTexture2D("image", sprite.GetTexture());
 
   // do some setup work here
-
-  constexpr gss::video::camera::types::FrameRate camera_fps = {30, 1};
+  constexpr gss::video::camera::types::FrameRate camera_fps = {1, 30};
   gss::video::camera::Camera camera(device_index, window_width, window_height, camera_fps, camera_format, ignore_camera_failed_format);
   CameraMenu camera_menu(&camera);
 

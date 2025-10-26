@@ -413,7 +413,7 @@ namespace gss::video::camera::platform {
     fmt.fmt.pix.width = width;
     fmt.fmt.pix.height = height;
     fmt.fmt.pix.pixelformat = videoFormat;
-
+    fmt.fmt.pix.field = V4L2_FIELD_ANY;
 
     if (!xioctl(fd, VIDIOC_S_FMT, &fmt))
     {
@@ -425,7 +425,6 @@ namespace gss::video::camera::platform {
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     xioctl(fd, VIDIOC_G_PARM, &streamparm);
 
-    streamparm.parm.capture.capturemode |= V4L2_CAP_TIMEPERFRAME;
     streamparm.parm.capture.timeperframe.numerator = fps.first;
     streamparm.parm.capture.timeperframe.denominator = fps.second;
 

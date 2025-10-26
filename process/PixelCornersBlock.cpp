@@ -23,8 +23,8 @@ PixelCornersBlock::PixelCornersBlock(const std::string &thread_name, const std::
 }
 
 PixelCornersBlock::PixelCornersBlock(const std::string &thread_name, const std::string &thread_description, const std::vector<std::shared_ptr<ImageProcessBlock>> &others)
-  : gradSync(2, [this](){ OnPhaseGradCompletion(); })
-  , gradBlurSync(3, [this](){ OnPhaseGradBlurCompletion(); })
+  : gradSync(2, on_completion_grad(this))
+  , gradBlurSync(3, on_completion_grad_blur(this))
 {
   name = thread_name;
   description = thread_description;
@@ -87,7 +87,7 @@ std::vector<std::shared_ptr<FImage>> PixelCornersBlock::Process(std::vector<std:
 
   {
     std::unique_lock lock(mtxGrad);
-    produceGradCondition.wait_for(lock, std::chrono::milliseconds(100u), [&](){ return gradComplete;} );
+    produceGradCondition.wait_for(lock, std::chrono::milliseconds(1000u), [&](){ return gradComplete;} );
   }
 
   // process special gradients
@@ -103,7 +103,7 @@ std::vector<std::shared_ptr<FImage>> PixelCornersBlock::Process(std::vector<std:
 
   {
     std::unique_lock lock(mtxGradBlur);
-    produceGradBlurCondition.wait_for(lock, std::chrono::milliseconds(100u), [&](){ return gradBlurComplete;} );
+    produceGradBlurCondition.wait_for(lock, std::chrono::milliseconds(1000u), [&](){ return gradBlurComplete;} );
   }
 
   cv::Mat detM = grad_xx.mul(grad_yy) - grad_xy.mul(grad_xy);
@@ -132,7 +132,6 @@ void PixelCornersBlock::ExtraEnableProcess()
 {
   produceGradXThread = cthread("prod_gx", "produce gradient x", &PixelCornersBlock::GradXTask, this);
   produceGradYThread = cthread("prod_gy", "produce gradient y", &PixelCornersBlock::GradYTask, this);
-
   produceGradXYThread = cthread("prod_gxy", "produce gradient xy", &PixelCornersBlock::GradXYTask, this);
   produceGradXXThread = cthread("prod_gxx", "produce gradient xx", &PixelCornersBlock::GradXXTask, this);
   produceGradYYThread = cthread("prod_gyy", "produce gradient yy", &PixelCornersBlock::GradYYTask, this);
@@ -177,7 +176,7 @@ void PixelCornersBlock::GradXTask()
 
     if (!sourcesGXQueue.empty())
     {
-      auto & [gray_wrapper, grad_x_wrapper] = sourcesGXQueue.front();
+      auto [gray_wrapper, grad_x_wrapper] = sourcesGXQueue.front();
       sourcesGXQueue.pop();
 
       auto& gray = gray_wrapper.get();
@@ -229,7 +228,7 @@ void PixelCornersBlock::GradXYTask()
 
     if (!sourcesGXYQueue.empty())
     {
-      auto & [grad_x_wrapper, grad_y_wrapper, grad_xy_wrapper] = sourcesGXYQueue.front();
+      auto [grad_x_wrapper, grad_y_wrapper, grad_xy_wrapper] = sourcesGXYQueue.front();
       sourcesGXYQueue.pop();
 
       auto& grad_x = grad_x_wrapper.get();
@@ -258,7 +257,7 @@ void PixelCornersBlock::GradXXTask()
 
     if (!sourcesGXXQueue.empty())
     {
-      auto & [grad_x0_wrapper, grad_x1_wrapper, grad_xx_wrapper] = sourcesGXXQueue.front();
+      auto [grad_x0_wrapper, grad_x1_wrapper, grad_xx_wrapper] = sourcesGXXQueue.front();
       sourcesGXXQueue.pop();
 
       auto& grad_x0 = grad_x0_wrapper.get();
@@ -287,7 +286,7 @@ void PixelCornersBlock::GradYYTask()
 
     if (!sourcesGYYQueue.empty())
     {
-      auto & [grad_y0_wrapper, grad_y1_wrapper, grad_yy_wrapper] = sourcesGYYQueue.front();
+      auto [grad_y0_wrapper, grad_y1_wrapper, grad_yy_wrapper] = sourcesGYYQueue.front();
       sourcesGYYQueue.pop();
 
       auto& grad_y0 = grad_y0_wrapper.get();

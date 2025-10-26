@@ -6,26 +6,34 @@ include(FetchContent)
 if (EXISTS "${CMAKE_SOURCE_DIR}/libs/opencv_contrib")
 else ()
         colored_message("1;34" "Fetch OpenCV contributions...")
+
+        if ((UNIX OR RUNNING_ON_WSL OR MINGW))
         file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/libs/opencv_contrib")
+        endif ()
+
         FetchContent_Populate(
                 ocv_contrib
                 GIT_REPOSITORY https://github.com/opencv/opencv_contrib.git
                 GIT_TAG        4.12.0  # or latest release
         )
-file(RENAME "${ocv_contrib_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/libs/opencv_contrib")
+        file(RENAME "${ocv_contrib_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/libs/opencv_contrib")
         colored_message("1;34" "Fetch OpenCV contributions complete!")
 endif ()
 
 if (EXISTS "${CMAKE_SOURCE_DIR}/libs/opencv/")
 else ()
         colored_message("1;34" "Fetch OpenCV...")
+
+        if ((UNIX OR RUNNING_ON_WSL OR MINGW))
         file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/libs/opencv")
+        endif ()
+
         FetchContent_Populate(
                         ocv
                         GIT_REPOSITORY https://github.com/opencv/opencv.git
                         GIT_TAG        4.12.0  # or latest release
                 )
-	file(RENAME "${ocv_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/libs/opencv")
+        file(RENAME "${ocv_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/libs/opencv")
         colored_message("1;34" "Fetch OpenCV complete! -- SOURCE_DIR: ${CMAKE_SOURCE_DIR}/libs/opencv/")
 endif ()
 
@@ -37,7 +45,9 @@ set(OPENCV_INSTALL_DIR ${CMAKE_BINARY_DIR}/opencv-install CACHE PATH "Path where
 # Path to opencv_contrib modules folder (change if different)
 set(OPENCV_CONTRIB_MODULES_DIR ${CMAKE_SOURCE_DIR}/libs/opencv_contrib/modules CACHE PATH "Path to OpenCV contrib modules")
 
+message("MSVC: ${MSVC}")
 if(MSVC)
+    message("CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
         set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/opencv_d-msvc)
         file(GLOB OPENCV_DLLS "${CMAKE_SOURCE_DIR}/opencv_d-msvc/x64/*/bin/*.dll")
@@ -51,6 +61,9 @@ if(MSVC)
                 OUTPUT_VARIABLE output
                 ERROR_VARIABLE errors
         )
+        message("result: ${result}")
+        message("output: ${output}")
+        message("errors: ${errors}")
     else()
         set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/opencv-msvc)
         file(GLOB OPENCV_DLLS "${CMAKE_SOURCE_DIR}/opencv-msvc/x64/*/bin/*.dll")
