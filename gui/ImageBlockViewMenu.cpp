@@ -17,6 +17,7 @@ void ImageBlockViewMenu::RenderMenu()
     ImGui::PushID(1);
     ImGui::BeginGroup();
     ImGui::SliderInt("View Index", &viewIndex, 0, static_cast<int32_t>(imageBlocks.size() - 1), "%d");
+    ImGui::Text("process time: %.2fms (%.2fms)", imageBlocks[static_cast<uint32_t>(viewIndex)]->TimeToComplete(), imageBlocks[static_cast<uint32_t>(viewIndex)]->TimeToCompleteFilter());
     ImGui::EndGroup();
     ImGui::PopID();
     ImGui::End();

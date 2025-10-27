@@ -13,7 +13,10 @@ class PixelFormatConversionBlock final : public ImageProcessBlock
     explicit PixelFormatConversionBlock(const std::string &thread_name, const std::string &thread_description, const std::vector<std::shared_ptr<ImageProcessBlock>> &others);
 
     void SetFormatConversionType(gss::video::camera::types::VideoFormat video_format);
-    gss::video::camera::types::VideoFormat GetFormatConversionType();
+    gss::video::camera::types::VideoFormat GetFormatConversionType() const;
+
+    float TimeToComplete() const override { return timeToComplete; }
+    float TimeToCompleteFilter() const override { return timeFilterToComplete; }
 
     protected:
       std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) override;

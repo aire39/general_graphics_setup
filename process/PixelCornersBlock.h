@@ -22,8 +22,8 @@ class PixelCornersBlock final : public ImageProcessBlock
     void SetSigma(double sigma);
     void SetKValue(float k);
 
-    float TimeToComplete() const;
-    float TimeToCompleteFilter() const;
+    float TimeToComplete() const override { return timeToComplete; }
+    float TimeToCompleteFilter() const override { return timeFilterToComplete; }
 
   protected:
     std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) override;

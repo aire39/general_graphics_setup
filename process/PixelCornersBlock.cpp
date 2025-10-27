@@ -47,16 +47,6 @@ void PixelCornersBlock::SetKValue(const float k)
   kFactor = k;
 }
 
-float PixelCornersBlock::TimeToComplete() const
-{
-  return timeToComplete;
-}
-
-float PixelCornersBlock::TimeToCompleteFilter() const
-{
-  return timeFilterToComplete;
-}
-
 std::vector<std::shared_ptr<FImage>> PixelCornersBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources)
 {
   std::shared_ptr<FImage> image_source = nullptr;
@@ -112,12 +102,12 @@ std::vector<std::shared_ptr<FImage>> PixelCornersBlock::Process(std::vector<std:
 
   // process results
 
-  cv::Mat gray3;
-  cv::cvtColor(R, gray3, cv::COLOR_GRAY2RGB);
-  gray3.convertTo(gray3, CV_8UC3, 255.0);
+  cv::Mat R3C;
+  cv::cvtColor(R, R3C, cv::COLOR_GRAY2RGB);
+  R3C.convertTo(R3C, CV_8UC3, 255.0);
 
   auto image_result = std::make_shared<FImage>("corners", R.cols, R.rows, SDL_PixelFormat::SDL_PIXELFORMAT_RGB24, true);
-  std::memcpy(image_result->GetImage(0)->pixels, gray3.data, image_result->GetHeight() * image_result->GetWidth() * 3);
+  std::memcpy(image_result->GetImage(0)->pixels, R3C.data, image_result->GetHeight() * image_result->GetWidth() * 3);
 
   auto end_time_process = std::chrono::high_resolution_clock::now();
 

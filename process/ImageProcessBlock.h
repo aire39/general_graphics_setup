@@ -23,6 +23,9 @@ class ImageProcessBlock
     void QueueToProcess(std::vector<std::shared_ptr<FImage>> images);
     void Enable(bool enable);
 
+    virtual float TimeToComplete() const { return timeToComplete; } // shouldn't need to make this virtual. fix this later
+    virtual float TimeToCompleteFilter() const { return timeFilterToComplete; } // shouldn't need to make this virtual. fix this later
+
     bool IsEnabled() const;
 
     DataFlow GetDataFlow() const;
@@ -33,6 +36,8 @@ class ImageProcessBlock
   protected:
     std::string name = "name";
     std::string description = "description";
+    float timeToComplete = 0.0f; // milliseconds
+    float timeFilterToComplete = 0.0f; // milliseconds
     DataFlow dataFlow = DataFlow::F_IN;
     std::vector<std::shared_ptr<ImageProcessBlock>> connections;
     std::queue<std::vector<std::shared_ptr<FImage>>> imageQueue;
