@@ -102,8 +102,6 @@ int32_t main(int32_t argc, char*argv[])
   // do some setup work here
   constexpr gss::video::camera::types::FrameRate camera_fps = {1, 30};
   gss::video::camera::Camera camera(device_index, window_width, window_height, camera_fps, camera_format, ignore_camera_failed_format);
-  CameraMenu camera_menu(&camera);
-
   camera.StartCapture();
 
   gss::video::camera::types::FrameSize current_frame_size = camera.GetResolution();
@@ -116,6 +114,7 @@ int32_t main(int32_t argc, char*argv[])
   process_edge_block->Enable(true);
   process_corners_block->Enable(true);
 
+  CameraMenu camera_menu(&camera, process_format_block.get());
   PixelCornersMenu pixel_corners_menu(process_corners_block.get());
   ImageBlockViewMenu image_block_menu({process_format_block.get(), process_edge_block.get(), process_corners_block.get()});
 

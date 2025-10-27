@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 #include <spdlog/spdlog.h>
+
+#include "process/PixelFormatConversionBlock.h"
 #include "video/camera/common/CameraBase.h"
 #include "video/camera/common/CameraHelpers.h"
 
@@ -9,8 +11,9 @@ namespace {
   constexpr bool update_on_change = false;
 }
 
-CameraMenu::CameraMenu(gss::video::camera::CameraBase *camera)
+CameraMenu::CameraMenu(gss::video::camera::CameraBase *camera, PixelFormatConversionBlock* pixel_format_conversion_block)
   : camera(camera)
+  , pixelFormatConversionBlock(pixel_format_conversion_block)
   , frameRate{static_cast<int32_t>(camera->GetFramerate().first), static_cast<int32_t>(camera->GetFramerate().second)}
   , resolution{static_cast<int32_t>(camera->GetResolution().first), static_cast<int32_t>(camera->GetResolution().second)}
 {
@@ -52,7 +55,11 @@ void CameraMenu::RenderMenu()
     ImGui::TextUnformatted("Set Resolution:");
     if (ImGui::InputInt2("##resolution", resolution)) {camera->ChangeResolution({resolution[0], resolution[1]}, update_on_change);}
     ImGui::TextUnformatted("Set Pixel Format:");
-    if (ImGui::InputInt("##video-format", &videoFormat)) {camera->ChangePixelFormat(gss::video::camera::helpers::get_format_by_index(videoFormat), update_on_change);}
+    if (ImGui::InputInt("##video-format", &videoFormat))
+    {
+      camera->ChangePixelFormat(gss::video::camera::helpers::get_format_by_index(videoFormat), update_on_change);
+      pixelFormatConversionBlock->SetFormatConversionType(gss::video::camera::helpers::get_format_by_index(videoFormat));
+    }
     if (ImGui::Checkbox("ignore format fail", &ignoreFormatFail)) {camera->IgnoreFormatFail(ignoreFormatFail, update_on_change);}
     ImGui::PushID(3);
     if (ImGui::Button("Start Capture")) {camera->StartCapture();}
@@ -66,4 +73,9 @@ void CameraMenu::RenderMenu()
   }
 
   ImGui::End();
+}
+
+gss::video::camera::types::VideoFormat CameraMenu::GetFormatConversionType() const
+{
+  return gss::video::camera::helpers::get_format_by_index(videoFormat);
 }
