@@ -17,10 +17,12 @@ class NonMaximumSuppressBlock final : public ImageProcessBlock
     void SetResponseFactor(double response_factor);
     void SetMinDistanceThreshold(double min_distance);
     void SetPointSize(double point_size);
-    void SetPointColor(std::array<float, 3> color);
+    void SetPointColor(std::array<double, 3> color);
 
     float TimeToComplete() const override { return timeToComplete; }
     float TimeToCompleteFilter() const override { return timeFilterToComplete; }
+
+    uint32_t GetNumberOfKeypoints() const;
 
   protected:
     std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) override;
@@ -34,7 +36,8 @@ class NonMaximumSuppressBlock final : public ImageProcessBlock
     double responseThresholdFactor = 0.1;
     double minDistanceThreshold = 20.0;
     double diameterThreshold = 4.0;
-    std::array<float, 3> pointColor = { { 1.0f, 1.0f, 1.0f } };
+    std::array<double, 3> pointColor = { { 1.0, 1.0, 1.0 } };
 
+    uint32_t numberOfKeypoints = 0;
     std::vector<cv::KeyPoint> finalKeyPoints;
 };

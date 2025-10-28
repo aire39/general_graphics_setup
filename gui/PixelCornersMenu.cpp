@@ -1,6 +1,7 @@
 #include "PixelCornersMenu.h"
 
 #include <string>
+#include <algorithm>
 #include <imgui.h>
 
 #include "process/NonMaximumSuppressBlock.h"
@@ -41,6 +42,13 @@ namespace {
     // Render the text
     ImGui::Text("%s", text.c_str());
   }
+
+  std::array<double, 3> ConvertColorFloatToDouble(std::array<float, 3> color)
+  {
+    std::array<double, 3> convert_to_double;
+    std::ranges::transform(color, convert_to_double.begin(), [](const float& v) { return static_cast<double>(v); });
+    return convert_to_double;
+  }
 }
 
 PixelCornersMenu::PixelCornersMenu(PixelCornersBlock* pixel_block, NonMaximumSuppressBlock* nms_block)
@@ -49,7 +57,7 @@ PixelCornersMenu::PixelCornersMenu(PixelCornersBlock* pixel_block, NonMaximumSup
 {
   if (nmsBlock)
   {
-    nmsBlock->SetPointColor(pointColor);
+    nmsBlock->SetPointColor(ConvertColorFloatToDouble(pointColor));
   }
 }
 
@@ -73,7 +81,7 @@ void PixelCornersMenu::RenderMenu()
     TextCentered("Point Size");
     if (ImGui::SliderFloat("##PointSizeFactor", &pointSize, 0.0, 10.0f, "%.3f")) nmsBlock->SetPointSize(pointSize);
     SetItemWidth(default_color_wheel_size);
-    if (ImGui::ColorPicker3("##PointColor", pointColor.data(), ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_PickerHueWheel)) nmsBlock->SetPointColor(pointColor);
+    if (ImGui::ColorPicker3("##PointColor", pointColor.data(), ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_PickerHueWheel)) nmsBlock->SetPointColor(ConvertColorFloatToDouble(pointColor));
     ImGui::EndGroup();
     ImGui::PopID();
 

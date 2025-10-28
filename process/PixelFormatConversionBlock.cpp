@@ -1,5 +1,6 @@
 #include "PixelFormatConversionBlock.h"
 
+#include <chrono>
 #include "graphics/images/FImage.h"
 #include "graphics/filters/Filters.h"
 

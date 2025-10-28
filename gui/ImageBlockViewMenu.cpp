@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 #include "process/ImageProcessBlock.h"
+#include "process/NonMaximumSuppressBlock.h"
 
 ImageBlockViewMenu::ImageBlockViewMenu(const std::vector<ImageProcessBlock*> &image_blocks)
   : imageBlocks(image_blocks)
@@ -11,6 +12,8 @@ ImageBlockViewMenu::ImageBlockViewMenu(const std::vector<ImageProcessBlock*> &im
 
 void ImageBlockViewMenu::RenderMenu()
 {
+  auto nms_block = dynamic_cast<NonMaximumSuppressBlock*>(imageBlocks[static_cast<uint32_t>(viewIndex)]);
+
   if (!imageBlocks.empty())
   {
     ImGui::Begin("ImageBlock Controller", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
@@ -18,6 +21,7 @@ void ImageBlockViewMenu::RenderMenu()
     ImGui::BeginGroup();
     ImGui::SliderInt("View Index", &viewIndex, 0, static_cast<int32_t>(imageBlocks.size() - 1), "%d");
     ImGui::Text("process time: %.2fms (%.2fms)", imageBlocks[static_cast<uint32_t>(viewIndex)]->TimeToComplete(), imageBlocks[static_cast<uint32_t>(viewIndex)]->TimeToCompleteFilter());
+    if (nms_block) ImGui::Text("number of keypoints: %d", nms_block->GetNumberOfKeypoints());
     ImGui::EndGroup();
     ImGui::PopID();
     ImGui::End();

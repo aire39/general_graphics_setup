@@ -53,9 +53,14 @@ void NonMaximumSuppressBlock::SetPointSize(const double point_size)
   diameterThreshold = point_size;
 }
 
-void NonMaximumSuppressBlock::SetPointColor(std::array<float, 3> color)
+void NonMaximumSuppressBlock::SetPointColor(std::array<double, 3> color)
 {
   pointColor = color;
+}
+
+uint32_t NonMaximumSuppressBlock::GetNumberOfKeypoints() const
+{
+  return numberOfKeypoints;
 }
 
 std::vector<std::shared_ptr<FImage>> NonMaximumSuppressBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources)
@@ -94,8 +99,8 @@ std::vector<std::shared_ptr<FImage>> NonMaximumSuppressBlock::Process(std::vecto
     {
       if (response_mat.at<float>(y, x) > response_threshold)
       {
-        constexpr double point_angle = -1.0;
-        key_points.emplace_back(cv::Point2f(static_cast<float>(x), static_cast<float>(y)), diameterThreshold, point_angle, response_mat.at<float>(y, x));
+        constexpr float point_angle = -1.0f;
+        key_points.emplace_back(cv::Point2f(static_cast<float>(x), static_cast<float>(y)), static_cast<float>(diameterThreshold), point_angle, response_mat.at<float>(y, x));
       }
     }
   }
@@ -108,6 +113,7 @@ std::vector<std::shared_ptr<FImage>> NonMaximumSuppressBlock::Process(std::vecto
 
   // suppress by distance
 
+  finalKeyPoints.clear(); // potentially keep track of points and pass to the next step but this needs to be cleared
   for (const auto& kp : key_points)
   {
     bool too_close = false;
@@ -126,16 +132,16 @@ std::vector<std::shared_ptr<FImage>> NonMaximumSuppressBlock::Process(std::vecto
     }
   }
 
+  numberOfKeypoints = static_cast<uint32_t>(finalKeyPoints.size());
+
   // render points
 
   cv::Mat features_map(image_source->GetHeight(), image_source->GetWidth(), CV_8UC3, cv::Scalar(0, 0, 0));
 
   for (auto& fp : finalKeyPoints)
   {
-    cv::circle(features_map, fp.pt, static_cast<int32_t>(fp.size), cv::Scalar(pointColor[0] * 255.0f, pointColor[1] * 255.0f, pointColor[2] * 255.0f), 1.0, cv::LINE_AA);
+    cv::circle(features_map, fp.pt, static_cast<int32_t>(fp.size), cv::Scalar(pointColor[0] * 255.0, pointColor[1] * 255.0, pointColor[2] * 255.0), 1, cv::LINE_AA);
   }
-
-  finalKeyPoints.clear(); // potentially keep track of points and pass to the next step but this needs to be cleared
 
   // copy result of image to be sent out
 
