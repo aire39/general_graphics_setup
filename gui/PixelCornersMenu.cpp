@@ -6,6 +6,7 @@
 
 #include "process/NonMaximumSuppressBlock.h"
 #include "process/PixelCornersBlock.h"
+#include "process/OpticalFlowBlock.h"
 
 namespace {
   constexpr float default_color_wheel_size = 150.0f;
@@ -51,9 +52,10 @@ namespace {
   }
 }
 
-PixelCornersMenu::PixelCornersMenu(PixelCornersBlock* pixel_block, NonMaximumSuppressBlock* nms_block)
+PixelCornersMenu::PixelCornersMenu(PixelCornersBlock* pixel_block, NonMaximumSuppressBlock* nms_block, OpticalFlowBlock* optical_block)
   : pixelBlock(pixel_block)
   , nmsBlock(nms_block)
+  , opticalBlock(optical_block)
 {
   if (nmsBlock)
   {
@@ -70,18 +72,34 @@ void PixelCornersMenu::RenderMenu()
     ImGui::PushID(1);
     ImGui::BeginGroup();
 
-    TextCentered("K Factor");
-    if (ImGui::SliderFloat("##KFactor", &kFactor, 0.01f, 0.1f, "%.2f")) pixelBlock->SetKValue(kFactor);
-    TextCentered("Sigma Factor");
-    if (ImGui::SliderFloat("##SigmaFactor", &sigmaFactor, 0.0, 1.0f, "%.3f")) pixelBlock->SetSigma(sigmaFactor);
-    TextCentered("Response Factor");
-    if (ImGui::SliderFloat("##ResponseFactor", &responseFactor, 0.0, 1.0f, "%.3f")) nmsBlock->SetResponseFactor(responseFactor);
-    TextCentered("Min Distance Factor");
-    if (ImGui::SliderFloat("##MinDistanceFactor", &minDistanceFactor, 0.0, 100.0f, "%.3f")) nmsBlock->SetMinDistanceThreshold(minDistanceFactor);
-    TextCentered("Point Size");
-    if (ImGui::SliderFloat("##PointSizeFactor", &pointSize, 0.0, 10.0f, "%.3f")) nmsBlock->SetPointSize(pointSize);
-    SetItemWidth(default_color_wheel_size);
-    if (ImGui::ColorPicker3("##PointColor", pointColor.data(), ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_PickerHueWheel)) nmsBlock->SetPointColor(ConvertColorFloatToDouble(pointColor));
+    if (ImGui::Button("Corners")) settings = CornerSettings::CORNERS;
+    ImGui::SameLine();
+    if (ImGui::Button("Flow")) settings = CornerSettings::FLOW;
+
+    if (settings == CornerSettings::CORNERS)
+    {
+      TextCentered("K Factor");
+      if (ImGui::SliderFloat("##KFactor", &kFactor, 0.01f, 0.1f, "%.2f")) pixelBlock->SetKValue(kFactor);
+      TextCentered("Sigma Factor");
+      if (ImGui::SliderFloat("##SigmaFactor", &sigmaFactor, 0.0, 1.0f, "%.3f")) pixelBlock->SetSigma(sigmaFactor);
+      TextCentered("Response Factor");
+      if (ImGui::SliderFloat("##ResponseFactor", &responseFactor, 0.0, 1.0f, "%.3f")) nmsBlock->SetResponseFactor(responseFactor);
+      TextCentered("Min Distance Factor");
+      if (ImGui::SliderFloat("##MinDistanceFactor", &minDistanceFactor, 0.0, 100.0f, "%.3f")) nmsBlock->SetMinDistanceThreshold(minDistanceFactor);
+      TextCentered("Point Size");
+      if (ImGui::SliderFloat("##PointSizeFactor", &pointSize, 0.0, 10.0f, "%.3f")) nmsBlock->SetPointSize(pointSize);
+      SetItemWidth(default_color_wheel_size);
+      if (ImGui::ColorPicker3("##PointColor", pointColor.data(), ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_PickerHueWheel)) nmsBlock->SetPointColor(ConvertColorFloatToDouble(pointColor));
+    }
+    else // CornerSettings::FLOW
+    {
+      TextCentered("Steps");
+      if (ImGui::SliderInt("##StepsFactor", &flowSteps, 5, 100, "%.2f")) opticalBlock->SetMaxFlowSteps(static_cast<size_t>(flowSteps));
+      TextCentered("Min Points");
+      if (ImGui::SliderInt("##MinDistFactor", &minFlowAmount, 0, 100, "%.3f")) opticalBlock->SetMinPoints(static_cast<size_t>(minFlowAmount));
+    }
+
+
     ImGui::EndGroup();
     ImGui::PopID();
 

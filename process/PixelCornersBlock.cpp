@@ -47,7 +47,7 @@ void PixelCornersBlock::SetKValue(const float k)
   kFactor = k;
 }
 
-std::vector<std::shared_ptr<FImage>> PixelCornersBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources)
+std::vector<std::shared_ptr<FImage>> PixelCornersBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources, [[maybe_unused]] DataContainer& data_sources)
 {
   std::shared_ptr<FImage> image_source = nullptr;
   if (!image_sources.empty())
@@ -66,6 +66,13 @@ std::vector<std::shared_ptr<FImage>> PixelCornersBlock::Process(std::vector<std:
   cv::cvtColor(input_rgb, gray, cv::COLOR_RGB2GRAY);
   gray.convertTo(gray, CV_32F, 1.0 / 255.0);
 
+  cv::Mat gray_rgb;
+  cv::cvtColor(gray, gray_rgb, cv::COLOR_GRAY2RGB);
+  gray_rgb.convertTo(gray_rgb, CV_8UC3, 255.0);
+
+  auto image_gray = std::make_shared<FImage>("gray", gray_rgb.cols, gray_rgb.rows, SDL_PixelFormat::SDL_PIXELFORMAT_RGB24, true);
+  std::memcpy(image_gray->GetImage(0)->pixels, gray_rgb.data, image_gray->GetHeight() * image_gray->GetWidth() * 3);
+
   // process gradient images
 
   cv::Mat grad_x;
@@ -79,6 +86,22 @@ std::vector<std::shared_ptr<FImage>> PixelCornersBlock::Process(std::vector<std:
     std::unique_lock lock(mtxGrad);
     produceGradCondition.wait_for(lock, std::chrono::milliseconds(1000u), [&](){ return gradComplete;} );
   }
+
+  // convert grad x and y images to FImage to be passed on
+
+  cv::Mat grad_x_rgb;
+  cv::cvtColor(grad_x, grad_x_rgb, cv::COLOR_GRAY2RGB);
+  grad_x_rgb.convertTo(grad_x_rgb, CV_8UC3, 255.0);
+
+  auto image_grad_x = std::make_shared<FImage>("grad_x", grad_x_rgb.cols, grad_x_rgb.rows, SDL_PixelFormat::SDL_PIXELFORMAT_RGB24, true);
+  std::memcpy(image_grad_x->GetImage(0)->pixels, grad_x_rgb.data, image_grad_x->GetHeight() * image_grad_x->GetWidth() * 3);
+
+  cv::Mat grad_y_rgb;
+  cv::cvtColor(grad_y, grad_y_rgb, cv::COLOR_GRAY2RGB);
+  grad_y_rgb.convertTo(grad_y_rgb, CV_8UC3, 255.0);
+
+  auto image_grad_y = std::make_shared<FImage>("grad_y", grad_y_rgb.cols, grad_y_rgb.rows, SDL_PixelFormat::SDL_PIXELFORMAT_RGB24, true);
+  std::memcpy(image_grad_y->GetImage(0)->pixels, grad_y_rgb.data, image_grad_y->GetHeight() * image_grad_y->GetWidth() * 3);
 
   // process special gradients
 
@@ -115,7 +138,7 @@ std::vector<std::shared_ptr<FImage>> PixelCornersBlock::Process(std::vector<std:
   timeToComplete = static_cast<float>(tick_count) / 1000.0f;
   timeFilterToComplete = (lpf_smooth_factor * timeToComplete) + (1.0f - lpf_smooth_factor) * timeFilterToComplete;
 
-  return {image_result};
+  return {image_grad_x, image_grad_y, image_gray, image_result};
 }
 
 void PixelCornersBlock::ExtraEnableProcess()

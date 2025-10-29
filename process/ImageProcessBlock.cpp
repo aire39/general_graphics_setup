@@ -30,7 +30,7 @@ ImageProcessBlock::~ImageProcessBlock()
   }
 }
 
-void ImageProcessBlock::QueueToProcess(std::vector<std::shared_ptr<FImage>> images)
+void ImageProcessBlock::QueueToProcess(const std::vector<std::shared_ptr<FImage>> &images)
 {
   if (enableProcess && !images.empty())
   {
@@ -129,6 +129,40 @@ std::shared_ptr<FImage> ImageProcessBlock::GetFrontImage()
   return image;
 }
 
+void ImageProcessBlock::QueueToProcess(const std::vector<std::shared_ptr<FImage>>& images, DataContainer data_sources)
+{
+  if (enableProcess)
+  {
+    if (!imageQueue.empty())
+    {
+      std::lock_guard q_lock(mtxImageQueue);
+      while (imageQueue.size() > static_cast<size_t>(maxQueueSize))
+      {
+        imageQueue.pop();
+        droppedImages++;
+      }
+    }
+
+    imageQueue.push(images);
+
+    if (!dataQueue.empty())
+    {
+      std::lock_guard q_lock(mtxDataQueue);
+      while (dataQueue.size() > static_cast<size_t>(maxQueueSize))
+      {
+        dataQueue.pop();
+      }
+    }
+
+    dataQueue.push(data_sources);
+
+    std::unique_lock lock(mtxCVImageQueue);
+    lock.unlock();
+
+    cvImageQueue.notify_one();
+  }
+}
+
 void ImageProcessBlock::SetMaxQueueSize(int32_t max_queue_size)
 {
   maxQueueSize = std::clamp(max_queue_size, 1, std::numeric_limits<int32_t>::max());
@@ -155,23 +189,42 @@ void ImageProcessBlock::RunProcessTask()
       }
     }
 
+    DataContainer data_sources;
+    {
+      std::lock_guard q_lock(mtxDataQueue);
+      if (!dataQueue.empty())
+      {
+        data_sources = dataQueue.front();
+        dataQueue.pop();
+      }
+    }
+
+
     std::vector<std::shared_ptr<FImage>> output_image;
     if (!source_images.empty())
     {
-      output_image = Process(source_images);
+      output_image = Process(source_images, data_sources);
     }
 
     if ((dataFlow == DataFlow::F_OUT || dataFlow == DataFlow::F_INOUT) && !output_image.empty())
     {
       std::lock_guard q_lock(mtxImageOutQueue);
-      imageOutQueue.push(output_image);
+      if (!data_sources.IsDataContainerEmpty())
+      {
+        dataOutQueue.push(dataSources);
+      }
+
+      if (!output_image.empty())
+      {
+        imageOutQueue.push(output_image);
+      }
     }
 
     if (!connections.empty() && !output_image.empty())
     {
       for (auto conn : connections)
       {
-        conn->QueueToProcess(output_image);
+        conn->QueueToProcess(output_image, data_sources);
       }
     }
   }

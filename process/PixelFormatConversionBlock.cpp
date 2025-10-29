@@ -34,7 +34,7 @@ gss::video::camera::types::VideoFormat PixelFormatConversionBlock::GetFormatConv
   return videoFormat;
 }
 
-std::vector<std::shared_ptr<FImage>> PixelFormatConversionBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources)
+std::vector<std::shared_ptr<FImage>> PixelFormatConversionBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources, [[maybe_unused]] DataContainer& data_sources)
 {
   std::shared_ptr<FImage> image_source = nullptr;
   if (!image_sources.empty())

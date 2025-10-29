@@ -13,5 +13,5 @@ class PixelEdgeBlock final : public ImageProcessBlock
     float TimeToCompleteFilter() const override { return timeFilterToComplete; }
 
   protected:
-    std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) override;
+    std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources, DataContainer& data_sources) override;
 };

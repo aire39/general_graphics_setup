@@ -6,7 +6,8 @@
 #include <memory>
 #include <string>
 #include <condition_variable>
-#include "../common/cthreads/cthread.h"
+#include "DataContainer.h"
+#include "common/cthreads/cthread.h"
 
 class FImage;
 
@@ -20,7 +21,7 @@ class ImageProcessBlock
     explicit ImageProcessBlock(const std::string &thread_name, const std::string &thread_description, const std::vector<std::shared_ptr<ImageProcessBlock>> &others);
     virtual ~ImageProcessBlock();
 
-    void QueueToProcess(std::vector<std::shared_ptr<FImage>> images);
+    void QueueToProcess(const std::vector<std::shared_ptr<FImage>> &images);
     void Enable(bool enable);
 
     virtual float TimeToComplete() const { return timeToComplete; } // shouldn't need to make this virtual. fix this later
@@ -44,10 +45,16 @@ class ImageProcessBlock
     std::queue<std::vector<std::shared_ptr<FImage>>> imageOutQueue;
     cthread processThread;
 
+    void QueueToProcess(const std::vector<std::shared_ptr<FImage>>& images, DataContainer data_sources);
+
     void SetMaxQueueSize(int32_t max_queue_size);
-    virtual std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) = 0;
+    virtual std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources, DataContainer& data_sources) = 0;
     virtual void ExtraEnableProcess() {}
     virtual void ExtraDisableProcess() {}
+
+    std::queue<DataContainer> dataQueue;
+    std::queue<DataContainer> dataOutQueue;
+    DataContainer dataSources;
 
   private:
     int32_t maxQueueSize = 1;
@@ -56,6 +63,8 @@ class ImageProcessBlock
     std::mutex mtxCVImageQueue;
     std::mutex mtxImageQueue;
     std::mutex mtxImageOutQueue;
+    std::mutex mtxDataQueue;
+    std::mutex mtxDataOutQueue;
     void RunProcessTask();
 
     static inline uint32_t droppedImages = 0;

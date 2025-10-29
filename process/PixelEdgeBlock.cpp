@@ -23,7 +23,7 @@ PixelEdgeBlock::PixelEdgeBlock(const std::string &thread_name, const std::string
   dataFlow = DataFlow::F_INOUT;
 }
 
-std::vector<std::shared_ptr<FImage>> PixelEdgeBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources)
+std::vector<std::shared_ptr<FImage>> PixelEdgeBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources, [[maybe_unused]] DataContainer& data_sources)
 {
   std::shared_ptr<FImage> image_source = nullptr;
   if (!image_sources.empty())

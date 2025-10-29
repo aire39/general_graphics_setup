@@ -41,6 +41,7 @@
 #include "process/PixelEdgeBlock.h"
 #include "process/PixelCornersBlock.h"
 #include "process/NonMaximumSuppressBlock.h"
+#include "process/OpticalFlowBlock.h"
 
 void SetupShaderParams(const ShaderProgram & shader_program);
 bool WindowResize(void * data, SDL_Event * event);
@@ -107,19 +108,21 @@ int32_t main(int32_t argc, char*argv[])
 
   gss::video::camera::types::FrameSize current_frame_size = camera.GetResolution();
 
-  auto non_max_sup_block = std::make_shared<NonMaximumSuppressBlock>("nmsblock", "curtails corners");
-  auto process_corners_block = std::make_shared<PixelCornersBlock>("cornersblock", "process corners from image", ImageBlockList{non_max_sup_block});
+  auto process_optical_flow_block = std::make_shared<OpticalFlowBlock>("optflowblock", "optical flow from points");
+  auto process_non_max_sup_block = std::make_shared<NonMaximumSuppressBlock>("nmsblock", "curtails corners", ImageBlockList{process_optical_flow_block});
+  auto process_corners_block = std::make_shared<PixelCornersBlock>("cornersblock", "process corners from image", ImageBlockList{process_non_max_sup_block});
   auto process_edge_block = std::make_shared<PixelEdgeBlock>("edgeblock", "process edges from image");
   auto process_format_block = std::make_shared<PixelFormatConversionBlock>("fmtblock", "convert uyvy to rgb", ImageBlockList{process_edge_block, process_corners_block});
 
   process_format_block->Enable(true);
   process_edge_block->Enable(true);
   process_corners_block->Enable(true);
-  non_max_sup_block->Enable(true);
+  process_non_max_sup_block->Enable(true);
+  process_optical_flow_block->Enable(true);
 
   CameraMenu camera_menu(&camera, process_format_block.get());
-  PixelCornersMenu pixel_corners_menu(process_corners_block.get(), non_max_sup_block.get());
-  ImageBlockViewMenu image_block_menu({process_format_block.get(), process_edge_block.get(), process_corners_block.get(), non_max_sup_block.get()});
+  PixelCornersMenu pixel_corners_menu(process_corners_block.get(), process_non_max_sup_block.get(), process_optical_flow_block.get());
+  ImageBlockViewMenu image_block_menu({process_format_block.get(), process_edge_block.get(), process_corners_block.get(), process_non_max_sup_block.get(), process_optical_flow_block.get()});
 
   // initialize imGUI
   ImGui::CreateContext();

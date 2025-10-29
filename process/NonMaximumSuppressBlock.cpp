@@ -11,6 +11,8 @@
 #include "SDL3/SDL.h"
 #include "support/logging.h"
 
+#include "CornerKeyPointsData.h"
+
 namespace {
   constexpr float lpf_smooth_factor = 0.1f;
 }
@@ -63,7 +65,7 @@ uint32_t NonMaximumSuppressBlock::GetNumberOfKeypoints() const
   return numberOfKeypoints;
 }
 
-std::vector<std::shared_ptr<FImage>> NonMaximumSuppressBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources)
+std::vector<std::shared_ptr<FImage>> NonMaximumSuppressBlock::Process(std::vector<std::shared_ptr<FImage>> image_sources, [[maybe_unused]] DataContainer& data_sources)
 {
   std::shared_ptr<FImage> image_source = nullptr;
   if (!image_sources.empty())
@@ -132,6 +134,10 @@ std::vector<std::shared_ptr<FImage>> NonMaximumSuppressBlock::Process(std::vecto
     }
   }
 
+  const auto keypoint_container = std::make_shared<CornerKeyPointsData>();
+  keypoint_container->keypoints = finalKeyPoints;
+  data_sources.Add(keypoint_container);
+
   numberOfKeypoints = static_cast<uint32_t>(finalKeyPoints.size());
 
   // render points
@@ -155,7 +161,7 @@ std::vector<std::shared_ptr<FImage>> NonMaximumSuppressBlock::Process(std::vecto
   timeToComplete = static_cast<float>(tick_count) / 1000.0f;
   timeFilterToComplete = (lpf_smooth_factor * timeToComplete) + (1.0f - lpf_smooth_factor) * timeFilterToComplete;
 
-  return {image_result};
+  return {image_sources[0], image_sources[1], image_sources[2], image_result};
 }
 
 void NonMaximumSuppressBlock::ExtraEnableProcess()

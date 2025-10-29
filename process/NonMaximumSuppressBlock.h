@@ -25,7 +25,7 @@ class NonMaximumSuppressBlock final : public ImageProcessBlock
     uint32_t GetNumberOfKeypoints() const;
 
   protected:
-    std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources) override;
+    std::vector<std::shared_ptr<FImage>> Process(std::vector<std::shared_ptr<FImage>> image_sources, DataContainer& data_sources) override;
     void ExtraEnableProcess() override;
     void ExtraDisableProcess() override;
 
