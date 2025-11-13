@@ -184,6 +184,10 @@ else ()
         unset(CAMERA_SRC)
 endif ()
 
+# grab all gui menus
+
+file (GLOB GUIMENU gui/*)
+
 # setup examples
 
 include(cmake/examples.cmake)
@@ -199,12 +203,7 @@ add_executable(${PROJECT_NAME}
                ${IMAGE_BLOCK_PROCESS_FILES}
                ${GLAD_SOURCES}
                ${CAMERA_SRC}
-               gui/CameraMenu.h
-               gui/CameraMenu.cpp
-               gui/PixelCornersMenu.h
-               gui/PixelCornersMenu.cpp
-               gui/ImageBlockViewMenu.h
-               gui/ImageBlockViewMenu.cpp
+               ${GUIMENU}
                GraphicsWindow.h
                GraphicsWindow.cpp
                OpenGLContext.h
@@ -221,12 +220,7 @@ add_library(${PROJECT_NAME}-static STATIC
             ${IMAGE_BLOCK_PROCESS_FILES}
             ${GLAD_SOURCES}
             ${CAMERA_SRC}
-            gui/CameraMenu.h
-            gui/CameraMenu.cpp
-            gui/PixelCornersMenu.h
-            gui/PixelCornersMenu.cpp
-            gui/ImageBlockViewMenu.h
-            gui/ImageBlockViewMenu.cpp
+            ${GUIMENU}
             GraphicsWindow.h
             GraphicsWindow.cpp
             OpenGLContext.h

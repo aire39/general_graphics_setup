@@ -17,13 +17,15 @@ CameraMenu::CameraMenu(gss::video::camera::CameraBase *camera, PixelFormatConver
   , frameRate{static_cast<int32_t>(camera->GetFramerate().first), static_cast<int32_t>(camera->GetFramerate().second)}
   , resolution{static_cast<int32_t>(camera->GetResolution().first), static_cast<int32_t>(camera->GetResolution().second)}
 {
+  id = CameraMenu::refCount++ * 100;
 }
 
 void CameraMenu::RenderMenu()
 {
-  ImGui::Begin("Camera Information", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+  const std::string frame_name = "Camera Information " + std::to_string(id);
+  ImGui::Begin(frame_name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-  ImGui::PushID(0);
+  ImGui::PushID(0 + id);
   ImGui::BeginGroup();
   if(ImGui::Button("Information Tab")) option = MenuOptions::INFO;
   ImGui::SameLine();
@@ -33,7 +35,7 @@ void CameraMenu::RenderMenu()
 
   if (option == MenuOptions::INFO)
   {
-    ImGui::PushID(1);
+    ImGui::PushID(1 + id);
     ImGui::BeginGroup();
     ImGui::TextUnformatted(("Framerate: " + (std::to_string(camera->GetFramerate().first) + "/" + std::to_string(camera->GetFramerate().second))).c_str());
     ImGui::TextUnformatted(("Frame Resolution: " + std::to_string(camera->GetResolution().first) + "x" + std::to_string(camera->GetResolution().second)).c_str());
@@ -48,7 +50,7 @@ void CameraMenu::RenderMenu()
   }
   else // (option == MenuOptions::SETTINGS)
   {
-    ImGui::PushID(2);
+    ImGui::PushID(2 + id);
     ImGui::BeginGroup();
     ImGui::TextUnformatted("Set Framerate:");
     if (ImGui::InputInt2("##framerate", frameRate)) {camera->ChangeFramerate({frameRate[0], frameRate[1]}, update_on_change);}
@@ -61,11 +63,11 @@ void CameraMenu::RenderMenu()
       pixelFormatConversionBlock->SetFormatConversionType(gss::video::camera::helpers::get_format_by_index(videoFormat));
     }
     if (ImGui::Checkbox("ignore format fail", &ignoreFormatFail)) {camera->IgnoreFormatFail(ignoreFormatFail, update_on_change);}
-    ImGui::PushID(3);
+    ImGui::PushID(3 + id);
     if (ImGui::Button("Start Capture")) {camera->StartCapture();}
     ImGui::PopID();
     ImGui::SameLine();
-    ImGui::PushID(4);
+    ImGui::PushID(4 + id);
     if (ImGui::Button("Stop Capture")) {camera->StopCapture();}
     ImGui::PopID();
     ImGui::EndGroup();

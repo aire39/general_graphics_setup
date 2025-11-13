@@ -26,4 +26,7 @@ private:
     int32_t resolution[2] {};
     int32_t videoFormat = 0;
     bool ignoreFormatFail = true;
+    uint32_t id = 0;
+
+    inline static uint32_t refCount = 0;
 };
