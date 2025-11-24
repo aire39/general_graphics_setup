@@ -37,7 +37,7 @@ SceneDepthBlock::SceneDepthBlock(const std::string &thread_name, const std::stri
   cv::Mat rvec = (cv::Mat_<double>(3,1) << 0.0, angle_rad, 0.0);
 
   cv::Mat R;
-  cv::Rodrigues(rvec, R);
+  //cv::Rodrigues(rvec, R);
 
   refIntrinsics.R = (cv::Mat_<double>(3, 3) <<
     1.0, 0.0, 0.0,

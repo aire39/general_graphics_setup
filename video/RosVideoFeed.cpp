@@ -2,11 +2,16 @@
 
 #include <iostream>
 #include "graphics/images/FImage.h"
+#include <sensor_msgs/msg/image.hpp>
 
 RosVideoFeed::RosVideoFeed()
-  : image_node("image_subscriber")
+  : rclcpp::Node("image_subscriber")
 {
-  image_sub = image_node->create_subscription("/image_raw", rclcpp::SensorDataQoS(), std::bind(&RosVideoFeed::image_callback, this, std::placeholders::_1));
+  image_sub = this->create_subscription<sensor_msgs::msg::Image>(
+    "/camera/camera/image_raw"
+   ,rclcpp::SensorDataQoS()
+   ,std::bind(&RosVideoFeed::image_callback, this, std::placeholders::_1)
+);
 }
 
 RosVideoFeed::~RosVideoFeed()
@@ -66,12 +71,12 @@ std::shared_ptr<FImage> RosVideoFeed::CopyFrame()
 
 gss::video::camera::types::FrameRate RosVideoFeed::GetFramerate() const
 {
-  return 0;
+  return {1, 30};
 }
 
 gss::video::camera::types::FrameSize RosVideoFeed::GetResolution() const
 {
-  return 0;
+  return {640, 480};
 }
 
 gss::video::camera::types::VideoFormat RosVideoFeed::GetPixelFormat() const
@@ -123,7 +128,7 @@ void RosVideoFeed::CaptureFramesThread()
 {
 }
 
-void image_callback(const sensor_msgs::msg::Image::SharedPtr msg)
+void RosVideoFeed::image_callback([[maybe_unused]] const sensor_msgs::msg::Image::SharedPtr msg)
 {
   std::cout << "received image data!" << std::endl;
   //cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, msg->encoding);

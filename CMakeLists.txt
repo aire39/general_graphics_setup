@@ -28,16 +28,6 @@ if(UNIX AND EXISTS "/proc/version")
     endif()
 endif()
 
-# ---- Find ROS 2 packages you need ----
-if (RUNNING_ON_WSL)
-find_package(ament_cmake REQUIRED)
-
-add_subdirectory(libs/rclcpp/rclcpp)
-add_subdirectory(libs/rclcpp/rclcpp_action)
-add_subdirectory(libs/rclcpp/rclcpp_components)
-add_subdirectory(libs/rclcpp/rclcpp_lifecycle)
-endif ()
-
 # Add OpenCV
 
 set(ENABLE_OPENCV_SUPPORT OFF CACHE BOOL "Enable Opencv Support")
@@ -173,6 +163,17 @@ file(GLOB CTHREADS_SRC ${PROJECT_SOURCE_DIR}/common/cthreads/*)
 add_library(cthreads STATIC ${CTHREADS_SRC})
 target_include_directories(cthreads PUBLIC ${PROJECT_SOURCE_DIR}/common)
 
+# ---- Find ROS 2 packages you need ----
+if (RUNNING_ON_WSL)
+    find_package(ament_cmake REQUIRED)
+    find_package(ament_cmake REQUIRED)
+    find_package(rclcpp REQUIRED)
+    find_package(sensor_msgs REQUIRED)
+    find_package(geometry_msgs REQUIRED)
+    find_package(gazebo_msgs REQUIRED)
+    #find_package(cv_bridge REQUIRED)
+endif ()
+
 ## Link and Executable Configuration
 
 file(GLOB GRAPHICS_FILTER_FILES graphics/filters/*)
@@ -189,6 +190,7 @@ if (WIN32 AND NOT RUNNING_ON_WSL)
 elseif (RUNNING_ON_WSL OR UNIX)
     unset(CAMERA_SRC)
     file (GLOB CAMERA_SRC video/camera/common/CameraBase.h video/camera/platform/LinuxCamera*)
+    file (GLOB ROS_CAMERA_SRC video/RosVideoFeed*)
     colored_message("1;34" "Camera support: Linux")
 else ()
         colored_message("1;33" "Camera support: None")
@@ -214,6 +216,7 @@ add_executable(${PROJECT_NAME}
                ${IMAGE_BLOCK_PROCESS_FILES}
                ${GLAD_SOURCES}
                ${CAMERA_SRC}
+               ${ROS_CAMERA_SRC}
                ${GUIMENU}
                GraphicsWindow.h
                GraphicsWindow.cpp
@@ -289,6 +292,14 @@ target_link_libraries(${PROJECT_NAME}-static PUBLIC
                       magic_enum::magic_enum
                       glm::glm
                       CLI11::CLI11)
+
+ament_target_dependencies(${PROJECT_NAME} PUBLIC
+                          rclcpp
+                          sensor_msgs
+                          geometry_msgs
+                          gazebo_msgs
+                          #cv_bridge
+)
 
 endif ()
 

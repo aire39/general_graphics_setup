@@ -30,7 +30,7 @@ class OpticalFlowBlock final : public ImageProcessBlock
     std::shared_ptr<FImage> lastGrayImage = nullptr;
     size_t maxflowSteps = 50;
     size_t trackPointMinThreshold = 50;
-    [[maybe_unused]] size_t trackPointMaxThreshold = 100;
+    //[[maybe_unused]] size_t trackPointMaxThreshold = 100;
     std::vector<cv::KeyPoint> lastTrackPoints;
     std::vector<cv::KeyPoint> lastGoodTrackPoints;
     std::vector<cv::KeyPoint> goodTrackPoints;

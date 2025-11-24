@@ -13,6 +13,7 @@
 #include <spdlog/fmt/bundled/color.h>
 #include <opencv2/opencv.hpp>
 #include <memory>
+#include <SDL3/SDL.h>
 
 #include "graphics/images/FImage.h"
 #include "common/support/logging.h"

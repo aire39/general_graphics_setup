@@ -33,6 +33,7 @@
 #include "video/camera/Camera.h"
 #include "video/camera/common/CameraHelpers.h"
 #include "video/camera/common/CameraFormats.h"
+#include "video/RosVideoFeed.h"
 #include "process/PixelFormatConversionBlock.h"
 
 #include "gui/CameraMenu.h"
@@ -114,7 +115,9 @@ int32_t main(int32_t argc, char*argv[])
 
   // do some setup work here
   constexpr gss::video::camera::types::FrameRate camera_fps = {1, 30};
+  //[[maybe_unused]] gss::video::camera::Camera ref_camera_hold(device_index, window_width, window_height, camera_fps, camera_format, ignore_camera_failed_format);
   gss::video::camera::Camera ref_camera(device_index, window_width, window_height, camera_fps, camera_format, ignore_camera_failed_format);
+  //RosVideoFeed ref_camera;
   gss::video::camera::Camera sec_camera(device_index + 1, window_width, window_height, camera_fps, camera_format_2, ignore_camera_failed_format);
 
   if (single_cam < 0)

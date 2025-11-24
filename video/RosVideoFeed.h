@@ -4,13 +4,11 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include <opencv2/opencv.hpp>
 #include "video/camera/common/CameraBase.h"
 
 class FImage;
 
-class RosVideoFeed final : public gss::video::camera::CameraBase
+class RosVideoFeed final : public gss::video::camera::CameraBase, rclcpp::Node
 {
   public:
     RosVideoFeed();
@@ -46,7 +44,6 @@ class RosVideoFeed final : public gss::video::camera::CameraBase
     void image_callback(const sensor_msgs::msg::Image::SharedPtr msg);
 
   private:
-    rclcpp::Node image_node;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub;
     std::queue<std::shared_ptr<FImage>> readyFrameQueue;
 };

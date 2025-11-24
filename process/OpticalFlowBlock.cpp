@@ -5,6 +5,7 @@
 #include "graphics/images/FImage.h"
 #include "CornerKeyPointsData.h"
 #include "support/logging.h"
+#include "common/support/ctypes.h"
 
 namespace {
   constexpr float lpf_smooth_factor = 0.1f;
@@ -178,7 +179,7 @@ std::vector<std::shared_ptr<FImage>> OpticalFlowBlock::Process(std::vector<std::
 
   cv::Mat features_map(image_source->GetHeight(), image_source->GetWidth(), CV_8UC3, cv::Scalar(0, 0, 0));
 
-  for (auto&& [tp0, tp1] : std::views::zip(good_track_points, lastGoodTrackPoints))
+  for (auto&& [tp0, tp1] : gss::views::zip(good_track_points, lastGoodTrackPoints))
   {
     cv::circle(features_map, tp0.pt, 3, cv::Scalar(255.0, 255.0, 255.0), 1, cv::LINE_AA);
 
