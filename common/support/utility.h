@@ -10,8 +10,12 @@
 #include <charconv>
 #include <algorithm>
 #include <glad/glad.h>
-#include "common/support/logging.h"
 #include <spdlog/fmt/bundled/color.h>
+#include <opencv2/opencv.hpp>
+#include <memory>
+
+#include "graphics/images/FImage.h"
+#include "common/support/logging.h"
 
 namespace utility::opengl {
     inline GLenum GLErrorCheck()
@@ -23,7 +27,25 @@ namespace utility::opengl {
     }
 }
 
-namespace utility{
+namespace utility::image {
+
+    inline cv::Mat FImageToMat(const FImage& image)
+    {
+        cv::Mat output(image.GetHeight(), image.GetWidth(), CV_8UC3, image.GetImage(0)->pixels);
+        return output;
+    }
+
+    inline std::shared_ptr<FImage> MatToFImage(const cv::Mat& image)
+    {
+        auto output = std::make_shared<FImage>("grad_x", image.cols, image.rows, SDL_PixelFormat::SDL_PIXELFORMAT_RGB24, true);
+        std::memcpy(output->GetImage(0)->pixels, image.data, output->GetHeight() * output->GetWidth() * 3);
+
+        return output;
+    }
+
+}
+
+namespace utility {
 
 #if defined(__GNUC__) || defined(__clang__)
     __attribute__((target("avx2")))

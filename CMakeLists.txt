@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 # Add the path to your cmake modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "/opt/ros/humble/share/")
 
 # cmake helper functions
 
@@ -26,6 +27,16 @@ if(UNIX AND EXISTS "/proc/version")
         message(STATUS "Detected WSL environment.")
     endif()
 endif()
+
+# ---- Find ROS 2 packages you need ----
+if (RUNNING_ON_WSL)
+find_package(ament_cmake REQUIRED)
+
+add_subdirectory(libs/rclcpp/rclcpp)
+add_subdirectory(libs/rclcpp/rclcpp_action)
+add_subdirectory(libs/rclcpp/rclcpp_components)
+add_subdirectory(libs/rclcpp/rclcpp_lifecycle)
+endif ()
 
 # Add OpenCV
 

@@ -1,5 +1,9 @@
 #include "SceneDepthBlock.h"
 
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+
 #include <SDL3/SDL.h>
 #include "graphics/images/FImage.h"
 #include "graphics/filters/Filters.h"
@@ -24,9 +28,16 @@ SceneDepthBlock::SceneDepthBlock(const std::string &thread_name, const std::stri
   dataFlow = DataFlow::F_INOUT;
 
   refIntrinsics.K = (cv::Mat_<double>(3, 3) <<
-    1.0, 0.0, 320.0,
-    0.0, 1.0, 240.0,
+    554.0, 0.0, 320.0,
+    0.0, 554.0, 240.0,
     0.0, 0.0, 1.0);
+
+  double angle_deg = 0.2;
+  double angle_rad = angle_deg * CV_PI / 180.0;
+  cv::Mat rvec = (cv::Mat_<double>(3,1) << 0.0, angle_rad, 0.0);
+
+  cv::Mat R;
+  cv::Rodrigues(rvec, R);
 
   refIntrinsics.R = (cv::Mat_<double>(3, 3) <<
     1.0, 0.0, 0.0,
@@ -34,11 +45,11 @@ SceneDepthBlock::SceneDepthBlock(const std::string &thread_name, const std::stri
     0.0, 0.0, 1.0);
 
   refIntrinsics.t = (cv::Mat_<double>(3, 1) <<
-    -0.1, 0.0, 0.0);
+    0.0, 0.0, 0.0);
 
   ocamIntrinsics.K = (cv::Mat_<double>(3, 3) <<
-    1.0, 0.0, 320.0,
-    0.0, 1.0, 240.0,
+    554.0, 0.0, 320.0,
+    0.0, 554.0, 240.0,
     0.0, 0.0, 1.0);
 
   ocamIntrinsics.R = (cv::Mat_<double>(3, 3) <<
@@ -47,12 +58,12 @@ SceneDepthBlock::SceneDepthBlock(const std::string &thread_name, const std::stri
     0.0, 0.0, 1.0);
 
   ocamIntrinsics.t = (cv::Mat_<double>(3, 1) <<
-    0.1, 0.0, 0.0);
+    0.0635, 0.0, 0.0);
 }
 
 void SceneDepthBlock::SetCameraRefPosition(const std::array<float, 3> position)
 {
-  refIntrinsics.t = (cv::Mat_<double>(3, 1) << position[0], position[1], position[1]);
+  refIntrinsics.t = (cv::Mat_<double>(3, 1) << position[0], position[1], position[2]);
 }
 
 void SceneDepthBlock::SetCameraRefFocal(const std::array<float, 2> focal)
@@ -67,7 +78,7 @@ void SceneDepthBlock::SetCameraPosition(const std::array<float, 3> position, int
 {
   if (index == 0)
   {
-    ocamIntrinsics.t = (cv::Mat_<double>(3, 1) << position[0], position[1], position[1]);
+    ocamIntrinsics.t = (cv::Mat_<double>(3, 1) << position[0], position[1], position[2]);
   }
 }
 
@@ -115,7 +126,7 @@ std::vector<std::shared_ptr<FImage>> SceneDepthBlock::Process(std::vector<std::s
   cam_gray.convertTo(cam_gray, CV_32F, 1.0/255.0);
 
   cv::Mat depth_map;
-  planeSweepDepth(ref_gray, refIntrinsics, {cam_gray}, {ocamIntrinsics}, depth_map, 0.001, 1.0, 8);
+  planeSweepDepth(ref_gray, refIntrinsics, {cam_gray}, {ocamIntrinsics}, depth_map, 0.2, 5.0, 128);
 
   cv::Mat gray_rgb;
   cv::cvtColor(depth_map, gray_rgb, cv::COLOR_GRAY2RGB);
