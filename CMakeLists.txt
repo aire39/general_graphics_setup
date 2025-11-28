@@ -168,6 +168,8 @@ file(GLOB GRAPHICS_FILTER_FILES graphics/filters/*)
 file(GLOB GRAPHICS_GEOMETRY_FILES graphics/geometry/*)
 file(GLOB GRAPHICS_IMAGES_FILES graphics/images/*)
 file(GLOB GRAPHICS_SHADERS_FILES graphics/shaders/*)
+file(GLOB GRAPHICS_OP_FILES graphics/operations/*)
+file(GLOB IMAGE_BLOCK_PROCESS_FILES process/*)
 
 if (WIN32 AND NOT RUNNING_ON_WSL)
     unset(CAMERA_SRC)
@@ -182,6 +184,10 @@ else ()
         unset(CAMERA_SRC)
 endif ()
 
+# grab all gui menus
+
+file (GLOB GUIMENU gui/*)
+
 # setup examples
 
 include(cmake/examples.cmake)
@@ -193,8 +199,11 @@ add_executable(${PROJECT_NAME}
                ${GRAPHICS_GEOMETRY_FILES}
                ${GRAPHICS_IMAGES_FILES}
                ${GRAPHICS_SHADERS_FILES}
+               ${GRAPHICS_OP_FILES}
+               ${IMAGE_BLOCK_PROCESS_FILES}
                ${GLAD_SOURCES}
                ${CAMERA_SRC}
+               ${GUIMENU}
                GraphicsWindow.h
                GraphicsWindow.cpp
                OpenGLContext.h
@@ -207,8 +216,11 @@ add_library(${PROJECT_NAME}-static STATIC
             ${GRAPHICS_GEOMETRY_FILES}
             ${GRAPHICS_IMAGES_FILES}
             ${GRAPHICS_SHADERS_FILES}
+            ${GRAPHICS_OP_FILES}
+            ${IMAGE_BLOCK_PROCESS_FILES}
             ${GLAD_SOURCES}
             ${CAMERA_SRC}
+            ${GUIMENU}
             GraphicsWindow.h
             GraphicsWindow.cpp
             OpenGLContext.h
@@ -217,7 +229,6 @@ add_library(${PROJECT_NAME}-static STATIC
 
 if (WIN32)
 target_link_libraries(${PROJECT_NAME} PUBLIC
-                      ${OPENCV_LIBS}
                       SDL3::SDL3-static
                       SDL3_image::SDL3_image
                       ${OPENGL_LIBRARIES}
@@ -337,10 +348,20 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                    ${CMAKE_CURRENT_BINARY_DIR}/glsl)
 
 foreach(dll ${OPENCV_DLLS})
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy
-                   ${dll}
-                   ${CMAKE_BINARY_DIR})
+
+    if(CMAKE_GENERATOR MATCHES "Visual Studio")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                ${dll}
+                "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+        message("copy dll: ${dll} to ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+    else ()
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                ${dll}
+                ${CMAKE_BINARY_DIR})
+        message("copy dll: ${dll} to ${CMAKE_BINARY_DIR}")
+    endif ()
 endforeach()
 
 ## Compiler Options

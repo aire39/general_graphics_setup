@@ -14,7 +14,7 @@ else
 	CMAKE_GEN="Unix Makefiles"
 fi
 
-cmake -G "$CMAKE_GEN" -DBUILD_ALL_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Debug ..
+cmake -G "$CMAKE_GEN" -DENABLE_OPENCV_SUPPORT=OFF -DBUILD_ALL_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Debug ..
 
 
 if command -v ninja > /dev/null 2>&1; then

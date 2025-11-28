@@ -20,7 +20,7 @@ namespace {
   constexpr uint32_t default_number_of_buffers = 8;
   constexpr bool default_ignore_fail_format = false;
   constexpr double lpf_smooth_factor = 0.1;
-  constexpr gss::video::camera::types::FrameRate default_frame_fps = {30, 1};
+  constexpr gss::video::camera::types::FrameRate default_frame_fps = {1, 30};
 }
 
 #ifndef MF_LOW_LATENCY
@@ -381,6 +381,13 @@ namespace gss::video::camera::platform {
       return false;
     }
 
+    if (captureDevice > (numSources -  1))
+    {
+      logging::error("Failed to grab camera source");
+
+      return false;
+    }
+
     hr = devices[captureDevice]->ActivateObject(__uuidof(IMFMediaSource), reinterpret_cast<void **>(&source));
     if (FAILED(hr))
     {
@@ -446,7 +453,7 @@ namespace gss::video::camera::platform {
       return false;
     }
 
-    hr = MFSetAttributeRatio(media_type, MF_MT_FRAME_RATE, fps.first, fps.second);
+    hr = MFSetAttributeRatio(media_type, MF_MT_FRAME_RATE, fps.second, fps.first);
     if (FAILED(hr))
     {
       logging::error("Failed to get native media type");
@@ -671,28 +678,31 @@ namespace gss::video::camera::platform {
       LONGLONG timestamp;
       Microsoft::WRL::ComPtr<IMFSample> sample;
 
-      const HRESULT hr = reader->ReadSample(static_cast<DWORD>(MF_SOURCE_READER_FIRST_VIDEO_STREAM)
-                                           ,0
-                                           ,&stream_index
-                                           ,&stream_flags
-                                           ,&timestamp
-                                           ,&sample);
-
-      if (FAILED(hr))
+      if (reader)
       {
-        logging::warn("Unable to query video frame sample");
-      }
+        const HRESULT hr = reader->ReadSample(static_cast<DWORD>(MF_SOURCE_READER_FIRST_VIDEO_STREAM)
+                                             ,0
+                                             ,&stream_index
+                                             ,&stream_flags
+                                             ,&timestamp
+                                             ,&sample);
 
-      if (sample && SUCCEEDED(hr))
-      {
-        if (!isPause)
+        if (FAILED(hr))
         {
-          std::lock_guard lock_sample_queue(mutexQueue);
-          sampleBufferQueue.push({sample, stream_index, stream_flags, timestamp});
+          logging::warn("Unable to query video frame sample");
         }
-        else
+
+        if (sample && SUCCEEDED(hr))
         {
-          sample.Reset();
+          if (!isPause)
+          {
+            std::lock_guard lock_sample_queue(mutexQueue);
+            sampleBufferQueue.push({sample, stream_index, stream_flags, timestamp});
+          }
+          else
+          {
+            sample.Reset();
+          }
         }
       }
     }
